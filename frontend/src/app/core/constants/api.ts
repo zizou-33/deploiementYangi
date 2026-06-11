@@ -2,7 +2,7 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 
 export const API_URL = isLocal
   ? 'http://127.0.0.1:8000/api'
-  : 'https://TON-URL-RENDER.onrender.com/api';
+  : 'https://yangi-backend.onrender.com';
 
 export const API = {
   auth: {
