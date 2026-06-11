@@ -1,0 +1,58 @@
+<div class="chat-page">
+  <div class="chat-header">
+    <button class="back-btn" onclick="history.back()">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <div class="chat-title">
+      <div class="chat-avatar"><i class="fas fa-car"></i></div>
+      <div>
+        <strong>Course #{{ rideId }}</strong>
+        <span>Chat en temps réel</span>
+      </div>
+    </div>
+    <div class="ws-status"><i class="fas fa-circle"></i> En ligne</div>
+  </div>
+
+  <div class="chat-body">
+    @if (loading) {
+      <div class="loading-wrapper"><div class="spinner"></div></div>
+    } @else if (messages.length === 0) {
+      <div class="chat-empty">
+        <i class="fas fa-comments"></i>
+        <p>Démarrez la conversation</p>
+      </div>
+    } @else {
+      @for (msg of messages; track $index) {
+        <div class="msg-wrapper" [class.own]="isOwn(msg)">
+          @if (!isOwn(msg)) {
+            <div class="msg-avatar">{{ msg.sender_username?.charAt(0)?.toUpperCase() }}</div>
+          }
+          <div class="msg-bubble" [class.own]="isOwn(msg)">
+            @if (!isOwn(msg)) {
+              <div class="msg-sender">{{ msg.sender_username }}</div>
+            }
+            <div class="msg-content">{{ msg.content }}</div>
+            @if (msg.created_at) {
+              <div class="msg-time">{{ msg.created_at | date:'HH:mm' }}</div>
+            }
+          </div>
+        </div>
+      }
+      <div #messagesEnd></div>
+    }
+  </div>
+
+  <div class="chat-input-bar">
+    <div class="chat-input-wrap">
+      <textarea
+        [(ngModel)]="newMessage"
+        (keydown)="onKeydown($event)"
+        placeholder="Écrivez un message... (Entrée pour envoyer)"
+        rows="1">
+      </textarea>
+      <button class="send-btn" (click)="send()" [disabled]="!newMessage.trim()">
+        <i class="fas fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+</div>

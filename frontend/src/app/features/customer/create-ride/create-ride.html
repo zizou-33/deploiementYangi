@@ -67,13 +67,7 @@
             </div>
             <div class="search-input-wrap">
               <i class="fas fa-magnifying-glass"></i>
-              <input
-                type="text"
-                [(ngModel)]="pickupQuery"
-                (input)="searchPickup()"
-                placeholder="Ex: Melen, Yaoundé"
-                [class.selected]="!!pickupSelected"
-              />
+              <input type="text" [(ngModel)]="pickupQuery" (input)="onPickupInput()" placeholder="Ex: Melen, Yaoundé" [class.selected]="!!pickupSelected" />
               @if (pickupLoading) {
                 <i class="fas fa-spinner fa-spin right-icon"></i>
               }
@@ -106,13 +100,7 @@
             </div>
             <div class="search-input-wrap">
               <i class="fas fa-magnifying-glass"></i>
-              <input
-                type="text"
-                [(ngModel)]="destQuery"
-                (input)="searchDest()"
-                placeholder="Ex: Bastos, Yaoundé"
-                [class.selected]="!!destSelected"
-              />
+              <input type="text" [(ngModel)]="destQuery" (input)="onDestInput()" placeholder="Ex: Bastos, Yaoundé" [class.selected]="!!destSelected" />
               @if (destLoading) {
                 <i class="fas fa-spinner fa-spin right-icon"></i>
               }

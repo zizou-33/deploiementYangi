@@ -7,4 +7,5 @@ urlpatterns = [
     path('',include('app.reviews.urls')),
     path('',include('app.notifications.urls')),
     path('',include('app.drivers.urls')),
+    path('',include('app.chat.urls')),
 ]

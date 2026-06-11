@@ -112,5 +112,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
 
+  {
+    path: 'chat/:rideId',
+    loadComponent: () => import('./features/chat/chat').then((m) => m.ChatComponent),
+    canActivate: [authGuard],
+  },
+
   { path: '**', redirectTo: 'login' },
 ];

@@ -66,6 +66,9 @@
               <button class="btn btn-success" (click)="complete(currentRide.id)" [disabled]="actionLoading">
                 <i class="fas fa-flag-checkered"></i> Terminer la course
               </button>
+              <a [routerLink]="['/chat', currentRide.id]" class="btn btn-ghost">
+                <i class="fas fa-comments"></i> Contacter le client
+              </a>
             }
             <button class="btn btn-ghost" (click)="cancel(currentRide.id)" [disabled]="actionLoading">
               <i class="fas fa-xmark"></i> Annuler

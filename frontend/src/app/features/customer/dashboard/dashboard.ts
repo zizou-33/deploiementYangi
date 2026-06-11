@@ -25,6 +25,7 @@ export class DashboardComponent {
   ngOnInit() {
     this.user = this.auth.currentUser;
     this.cdr.detectChanges();
+    this.auth.refreshAndRedirect();
 
     this.rideService.getCustomerHistory().subscribe({
       next: (rides) => {
@@ -36,17 +37,23 @@ export class DashboardComponent {
         this.recentRides = [];
         this.loading = false;
         this.cdr.detectChanges();
-      }
+      },
     });
   }
 
   get completedRides(): number {
-    return this.recentRides.filter(r => r.status === 'completed').length;
+    return this.recentRides.filter((r) => r.status === 'completed').length;
   }
 
   get pendingRides(): number {
-    return this.recentRides.filter(r => r.status === 'pending').length;
+    return this.recentRides.filter((r) => r.status === 'pending').length;
   }
 
-  logout() { this.auth.logout(); }
+  checkRole() {
+    this.auth.refreshAndRedirect();
+  }
+
+  logout() {
+    this.auth.logout();
+  }
 }

@@ -36,7 +36,6 @@ export class AuthService {
   login(data: { username: string; password: string }): Observable<any> {
     return this.http.post<any>(API.auth.login, data).pipe(
       tap((res) => {
-        // JWT : access + refresh
         if (res.access) {
           localStorage.setItem('token', res.access);
           localStorage.setItem('refresh', res.refresh);
@@ -54,8 +53,24 @@ export class AuthService {
     );
   }
 
+  // Rafraîchit le profil et redirige si le rôle a changé
+  refreshAndRedirect(): void {
+    this.getProfile().subscribe({
+      next: (user) => {
+        if (user.role === 'driver') this.router.navigate(['/driver/dashboard']);
+        else if (user.role === 'admin') this.router.navigate(['/admin/dashboard']);
+        else this.router.navigate(['/customer/dashboard']);
+      },
+    });
+  }
+
   updateProfile(data: Partial<User>): Observable<User> {
-    return this.http.patch<User>(API.auth.profile, data);
+    return this.http.patch<User>(API.auth.profile, data).pipe(
+      tap((user) => {
+        localStorage.setItem('user', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+      }),
+    );
   }
 
   changePassword(data: { old_password: string; new_password: string }): Observable<any> {
@@ -73,11 +88,9 @@ export class AuthService {
   get currentUser(): User | null {
     return this.currentUserSubject.value;
   }
-
   get isLoggedIn(): boolean {
     return !!localStorage.getItem('token');
   }
-
   get role(): string {
     return this.currentUser?.role || '';
   }

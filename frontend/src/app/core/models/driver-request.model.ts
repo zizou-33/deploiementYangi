@@ -1,5 +1,6 @@
 export interface DriverRequest {
   id: number;
+  username?: string;
   status: 'pending' | 'approved' | 'declined';
   motivation: string;
   id_card_number: string;

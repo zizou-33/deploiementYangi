@@ -40,7 +40,7 @@
                 <i class="fas fa-bell"></i>
               </div>
               <div class="notif-body">
-                <div class="notif-message">{{ notif.message }}</div>
+                <div class="notif-message">{{ notif.content }}</div>
                 <div class="notif-meta">
                   <span>{{ notif.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
                   @if (!notif.is_read) { <span class="unread-badge">Non lu</span> }

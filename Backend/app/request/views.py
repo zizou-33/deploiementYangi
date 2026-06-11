@@ -61,10 +61,14 @@ class ApproveDriverView(APIView):
             car_color=driver_request.car_color,
             plate_number=driver_request.plate_number
         )
+        Notification.objects.create(
+            title="Devenir chauffeur",
+            content="Votre demande pour devenir chauffeur a été validée par l'équipe technique. Bienvenue!",
+            receiver=user,
+        )
 
         return Response({
             "message": "Chauffeur approuvé"
-
         })
 
 class DeclineDriverView(APIView):
@@ -77,6 +81,12 @@ class DeclineDriverView(APIView):
 
         driver_request.status = "declined"
         driver_request.save()
+
+        Notification.objects.create(
+            title="Devenir chauffeur",
+            content="Votre demande pour devenir chauffeur a été refusée par l'équipe technique.",
+            receiver=driver_request.user,
+        )
 
         return Response({
             "message": "Candidature refusée",

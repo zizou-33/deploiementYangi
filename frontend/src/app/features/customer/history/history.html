@@ -156,6 +156,11 @@
               <i class="fas fa-star"></i> Noter cette course
             </button>
           }
+          @if (selectedRide && (selectedRide.status === 'accepted' || selectedRide.status === 'in_progress')) {
+            <a [routerLink]="['/chat', selectedRide.id]" class="btn btn-ghost btn-full">
+              <i class="fas fa-comments"></i> Contacter le chauffeur
+            </a>
+          }
         </div>
       </div>
     </div>

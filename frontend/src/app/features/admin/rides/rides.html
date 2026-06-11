@@ -59,8 +59,8 @@
                   <td>{{ ride.id }}</td>
                   <td>
                     <div class="user-cell">
-                      <div class="user-avatar">{{ (ride.customer ?? '?').toString().charAt(0).toUpperCase() }}</div>
-                      <span>{{ ride.customer ?? '—' }}</span>
+                      <div class="user-avatar">{{ (ride.customer || '?').toString().charAt(0).toUpperCase() }}</div>
+                      <span>{{ ride.customer || '' }}</span>
                     </div>
                   </td>
                   <td>{{ ride.driver || '—' }}</td>
