@@ -1,0 +1,540 @@
+# PAGE SETTINGS - Paramètres du compte
+
+## 📄 FRONTEND (app/settings/page.tsx)
+
+### Structure
+- Page AVEC sidebar et topbar
+- Layout en 2 colonnes : Navigation verticale à gauche (3/12) + Contenu à droite (9/12)
+- 4 sections : Informations personnelles, Sécurité, Notifications, Langue et devise
+
+### Composants clés
+
+#### 1. Navigation verticale (gauche)
+```typescript
+const sections = [
+  { id: 'profile', label: 'Informations personnelles', icon: '👤' },
+  { id: 'security', label: 'Sécurité du compte', icon: '🔐' },
+  { id: 'notifications', label: 'Notifications', icon: '🔔' },
+  { id: 'language', label: 'Langue et devise', icon: '🌍' },
+];
+
+<div className="col-span-3">
+  <div className="bg-white rounded-3xl p-6 shadow-sm">
+    <p className="text-xs text-[#888] tracking-wider font-bold mb-4">SECTIONS</p>
+    <div className="space-y-2">
+      {sections.map((section) => (
+        <button
+          key={section.id}
+          onClick={() => setActiveSection(section.id)}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
+            activeSection === section.id
+              ? 'bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-[#E8C878] font-bold'
+              : 'text-[#666] hover:bg-[#F5F3EE]'
+          }`}
+        >
+          <span className="text-lg">{section.icon}</span>
+          <span className="text-sm">{section.label}</span>
+        </button>
+      ))}
+    </div>
+  </div>
+</div>
+
+
+
+
+2. Section Informations personnelles
+
+
+{activeSection === 'profile' && (
+  <>
+    <h2 className="text-xl font-bold text-[#1A1A2E] mb-2">Informations Personnelles</h2>
+    <div className="w-16 h-0.5 bg-gradient-to-r from-[#C9A84C] to-[#E8C878] mb-6" />
+
+    {/* Avatar et infos utilisateur */}
+    <div className="flex items-center gap-6 mb-8 pb-8 border-b border-[#F0EDE5]">
+      <div className="relative">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#1A1A2E] to-[#16213E] flex items-center justify-center text-4xl">
+          👤
+        </div>
+        <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-[#C9A84C] to-[#E8C878] rounded-xl flex items-center justify-center text-[#1A1A2E] text-lg hover:opacity-90 transition">
+          📷
+        </button>
+      </div>
+      <div>
+        <h3 className="text-xl font-bold text-[#1A1A2E]">{user?.firstName} {user?.lastName}</h3>
+        <p className="text-sm text-[#888]">@{user?.email?.split('@')[0]} · Membre depuis {new Date(user?.createdAt || '').toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' })}</p>
+        <div className="mt-2 inline-flex items-center gap-2 bg-[#E8F5E9] px-3 py-1 rounded-lg">
+          <span className="text-[#4CAF50] text-sm">✓</span>
+          <span className="text-xs text-[#4CAF50] font-bold">Compte vérifié</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Formulaire */}
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">NOM</label>
+          <input
+            type="text"
+            value={formData.lastName}
+            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            disabled={!isEditing}
+            className="w-full px-4 py-3 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl focus:outline-none focus:border-[#C9A84C] text-sm text-[#1A1A2E] disabled:opacity-70"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">PRÉNOM</label>
+          <input
+            type="text"
+            value={formData.firstName}
+            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            disabled={!isEditing}
+            className="w-full px-4 py-3 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl focus:outline-none focus:border-[#C9A84C] text-sm text-[#1A1A2E] disabled:opacity-70"
+          />
+        </div>
+      </div>
+
+      {/* Autres champs... */}
+    </div>
+
+    {/* Boutons d'action */}
+    <div className="flex items-center justify-end gap-4 mt-8 pt-8 border-t border-[#F0EDE5]">
+      {isEditing ? (
+        <>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="px-6 py-3 bg-[#F5F3EE] border border-[#E0D9CC] rounded-xl text-sm text-[#666] hover:bg-[#EDE9DF] transition"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSaveProfile}
+            disabled={loading}
+            className="px-6 py-3 bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border border-[#C9A84C] text-[#E8C878] rounded-xl text-sm font-bold hover:opacity-90 transition disabled:opacity-50"
+          >
+            {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+          </button>
+        </>
+      ) : (
+        <button
+          onClick={() => setIsEditing(true)}
+          className="px-6 py-3 bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border border-[#C9A84C] text-[#E8C878] rounded-xl text-sm font-bold hover:opacity-90 transition"
+        >
+          Modifier
+        </button>
+      )}
+    </div>
+  </>
+)}
+
+
+
+3. Section Sécurité (changement de mot de passe)
+
+
+{activeSection === 'security' && (
+  <>
+    <h2 className="text-xl font-bold text-[#1A1A2E] mb-2">Sécurité du Compte</h2>
+    <div className="w-16 h-0.5 bg-gradient-to-r from-[#C9A84C] to-[#E8C878] mb-6" />
+
+    <form onSubmit={handleChangePassword} className="space-y-6 max-w-xl">
+      <div>
+        <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">MOT DE PASSE ACTUEL</label>
+        <input
+          type="password"
+          value={passwordData.currentPassword}
+          onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+          className="w-full px-4 py-3 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl focus:outline-none focus:border-[#C9A84C] text-sm"
+          required
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">NOUVEAU MOT DE PASSE</label>
+        <input
+          type="password"
+          value={passwordData.newPassword}
+          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+          className="w-full px-4 py-3 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl focus:outline-none focus:border-[#C9A84C] text-sm"
+          required
+        />
+        <p className="text-xs text-[#888] mt-1">8 caractères minimum, une majuscule, un chiffre</p>
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">CONFIRMER LE NOUVEAU MOT DE PASSE</label>
+        <input
+          type="password"
+          value={passwordData.confirmPassword}
+          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+          className="w-full px-4 py-3 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl focus:outline-none focus:border-[#C9A84C] text-sm"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        disabled={loading}
+        className="px-6 py-3 bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border border-[#C9A84C] text-[#E8C878] rounded-xl text-sm font-bold hover:opacity-90 transition disabled:opacity-50"
+      >
+        {loading ? 'Modification...' : 'Modifier le mot de passe'}
+      </button>
+    </form>
+
+    {/* Info sur le code PIN */}
+    <div className="mt-8 pt-8 border-t border-[#F0EDE5]">
+      <h3 className="text-lg font-bold text-[#1A1A2E] mb-4">Code PIN de transaction</h3>
+      <div className="bg-[#F5F3EE] border border-[#E8C878]/40 rounded-xl p-6">
+        <p className="text-sm text-[#666] mb-2">Votre code PIN est utilisé pour confirmer vos transactions.</p>
+        <p className="text-sm text-[#888]">Pour des raisons de sécurité, le code PIN ne peut pas être modifié. Contactez le support si nécessaire.</p>
+      </div>
+    </div>
+  </>
+)}
+
+
+
+4. Section Notifications
+
+{activeSection === 'notifications' && (
+  <>
+    <h2 className="text-xl font-bold text-[#1A1A2E] mb-2">Notifications</h2>
+    <div className="w-16 h-0.5 bg-gradient-to-r from-[#C9A84C] to-[#E8C878] mb-6" />
+
+    <div className="space-y-4">
+      {[
+        { label: 'Notifications de transfert', desc: 'Recevoir des notifications quand un transfert est envoyé ou reçu', enabled: true },
+        { label: 'Demandes de bénéficiaires', desc: 'Recevoir des notifications quand quelqu\'un souhaite vous ajouter', enabled: true },
+        { label: 'Alertes de sécurité', desc: 'Recevoir des alertes en cas d\'activité suspecte', enabled: true },
+        { label: 'Mises à jour de taux', desc: 'Recevoir des notifications quand les taux de change changent significativement', enabled: false },
+        { label: 'Newsletter', desc: 'Recevoir des actualités et offres de DoMoney', enabled: false },
+      ].map((item, idx) => (
+        <div key={idx} className="flex items-center justify-between p-4 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl">
+          <div>
+            <p className="text-sm font-bold text-[#1A1A2E]">{item.label}</p>
+            <p className="text-xs text-[#888] mt-1">{item.desc}</p>
+          </div>
+          <div className={`w-12 h-6 rounded-full relative cursor-pointer transition ${item.enabled ? 'bg-[#C9A84C]' : 'bg-[#E0D9CC]'}`}>
+            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition ${item.enabled ? 'left-7' : 'left-1'}`} />
+          </div>
+        </div>
+      ))}
+    </div>
+  </>
+)}
+
+
+
+5. Section Langue et devise
+
+{activeSection === 'language' && (
+  <>
+    <h2 className="text-xl font-bold text-[#1A1A2E] mb-2">Langue et Devise</h2>
+    <div className="w-16 h-0.5 bg-gradient-to-r from-[#C9A84C] to-[#E8C878] mb-6" />
+
+    <div className="space-y-6">
+      <div>
+        <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">LANGUE</label>
+        <div className="flex items-center gap-4 px-4 py-3 bg-[#F8F7F4] border border-[#E8C878] rounded-xl">
+          <span className="text-lg">🇫🇷</span>
+          <span className="text-sm text-[#1A1A2E]">Français</span>
+          <button className="ml-auto text-xs text-[#C9A84C] hover:text-[#E8C878]">Modifier ▼</button>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">DEVISE PRINCIPALE</label>
+        <div className="flex items-center gap-4 px-4 py-3 bg-[#F8F7F4] border border-[#E8C878] rounded-xl">
+          <span className="text-lg">🇨🇲</span>
+          <span className="text-sm text-[#1A1A2E]">{user?.currency} — {user?.currency === 'XAF' ? 'Franc CFA (BEAC)' : user?.currency === 'EUR' ? 'Euro' : user?.currency === 'USD' ? 'Dollar US' : 'Livre Sterling'}</span>
+        </div>
+        <p className="text-xs text-[#888] mt-2">La devise principale est définie lors de la création du compte et ne peut pas être modifiée.</p>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">FUSEAU HORAIRE</label>
+        <div className="flex items-center gap-4 px-4 py-3 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl">
+          <span className="text-lg">🕐</span>
+          <span className="text-sm text-[#1A1A2E]">UTC+1 (Afrique/Paris)</span>
+        </div>
+      </div>
+    </div>
+  </>
+)}
+
+
+
+
+Logique React
+
+const [activeSection, setActiveSection] = useState('profile');
+const [isEditing, setIsEditing] = useState(false);
+const [loading, setLoading] = useState(false);
+const [formData, setFormData] = useState({
+  firstName: user?.firstName || '',
+  lastName: user?.lastName || '',
+  email: user?.email || '',
+  phone: user?.phone || '',
+  country: user?.country || '',
+  birthDate: user?.birthDate || '',
+  address: '',
+});
+const [passwordData, setPasswordData] = useState({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+});
+
+const handleSaveProfile = async () => {
+  setLoading(true);
+  try {
+    const response = await authApi.updateProfile({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      phone: formData.phone,
+      country: formData.country,
+      birthDate: formData.birthDate,
+    });
+    updateUser(response.data.data);
+    toast.success('Profil mis à jour avec succès');
+    setIsEditing(false);
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } };
+    toast.error(err.response?.data?.error || 'Erreur lors de la mise à jour');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleChangePassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (passwordData.newPassword !== passwordData.confirmPassword) {
+    toast.error('Les mots de passe ne correspondent pas');
+    return;
+  }
+  setLoading(true);
+  try {
+    await authApi.changePassword(passwordData.currentPassword, passwordData.newPassword);
+    toast.success('Mot de passe modifié avec succès');
+    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } };
+    toast.error(err.response?.data?.error || 'Erreur');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+🔧 BACKEND
+Endpoint 1 : PUT /api/auth/profile'
+
+
+export async function PUT(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const body = await request.json();
+  const { firstName, lastName, phone, country, birthDate, address } = body;
+  
+  const user = await prisma.user.update({
+    where: { id: decoded.id },
+    data: {
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      phone: phone || undefined,
+      country: country || undefined,
+      birthDate: birthDate || undefined,
+    },
+  });
+  
+  return NextResponse.json({
+    success: true,
+    data: {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      country: user.country,
+      birthDate: user.birthDate,
+      currency: user.currency,
+      userCode: user.userCode,
+      balance: user.balance,
+      createdAt: user.createdAt.toISOString(),
+    },
+  });
+}
+
+
+Endpoint 2 : PUT /api/auth/password
+
+
+export async function PUT(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const body = await request.json();
+  const { currentPassword, newPassword } = body;
+  
+  if (!currentPassword || !newPassword) {
+    return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 });
+  }
+  
+  if (newPassword.length < 8) {
+    return NextResponse.json({ error: 'Le mot de passe doit contenir au moins 8 caractères' }, { status: 400 });
+  }
+  
+  const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+  if (!user) {
+    return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+  }
+  
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    return NextResponse.json({ error: 'Mot de passe actuel incorrect' }, { status: 400 });
+  }
+  
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: decoded.id },
+    data: { password: hashedPassword },
+  });
+  
+  return NextResponse.json({ success: true, message: 'Mot de passe modifié avec succès' });
+}
+
+
+
+🗄️ BASE DE DONNÉES
+Table User (mise à jour)
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  phone     String?
+  password  String                    // Hashé avec bcrypt
+  pinCode   String?                   // Code PIN à 4 chiffres
+  firstName String
+  lastName  String
+  country   String
+  birthDate String
+  currency  String   @default("XAF")
+  userCode  String   @unique
+  balance   Float    @default(327980)
+  isVerified Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  sentTransactions     Transaction[]
+  receivedTransactions Transaction[]
+  beneficiaries        Beneficiary[]
+  addedBy              Beneficiary[]
+  notifications        Notification[]
+}
+
+
+
+🔄 FLUX DE MISE À JOUR DU PROFIL
+
+
+┌──────────────────┐
+│  Utilisateur     │  Clique sur "Modifier"
+│                  │  Les champs deviennent éditables
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Modification    │  Utilisateur modifie les champs
+│  des champs      │  (nom, prénom, téléphone, etc.)
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Clique sur      │  Envoi des données au backend
+│  "Sauvegarder"   │
+└────────┬─────────┘
+         │
+         ▼
+──────────────────┐
+│  PUT             │  Envoi des données modifiées
+│  /api/auth/      │
+│  profile         │
+└─────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Backend         │  - Vérification token JWT
+│  mise à jour     │  - Mise à jour en base de données
+│                  │  - Retour des données mises à jour
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Frontend        │  - Mise à jour du store (zustand)
+│  mise à jour     │  - Affichage du toast de succès
+│                  │  - Désactivation du mode édition
+└──────────────────┘
+
+
+
+
+
+✅ FONCTIONNALITÉS
+Navigation entre 4 sections (Profil, Sécurité, Notifications, Langue)
+Affichage des informations utilisateur
+Modification du profil (nom, prénom, téléphone, pays, date de naissance)
+Changement de mot de passe
+Affichage des préférences de notifications
+Affichage de la langue et de la devise
+Validation frontend (mots de passe correspondants, longueur minimale)
+Validation backend (token JWT, mot de passe actuel correct)
+Hashage du nouveau mot de passe avec bcrypt
+Mise à jour du store après modification
+Toast notifications de succès/erreur
+Design responsive et fidèle au SVG
+
+
+
+🔐 SÉCURITÉ
+Modification du profil
+Token JWT requis
+Seuls les champs autorisés peuvent être modifiés
+Email non modifiable (identifiant unique)
+Devise non modifiable (définie à l'inscription)
+Changement de mot de passe
+Token JWT requis
+Mot de passe actuel requis (vérification avec bcrypt)
+Nouveau mot de passe : minimum 8 caractères
+Nouveau mot de passe hashé avec bcrypt (10 rounds)
+Confirmation du nouveau mot de passe côté frontend
+Code PIN
+Non modifiable via l'interface
+Affichage informatif uniquement
+Contact support nécessaire pour modification
+🐛 GESTION DES ERREURS
+Erreurs frontend
+Mots de passe non correspondants → "Les mots de passe ne correspondent pas"
+Champs vides → Validation HTML5 (required)
+Erreurs backend
+Token invalide → 401 Unauthorized
+Champs manquants → 400 Bad Request
+Mot de passe < 8 caractères → 400 Bad Request
+Mot de passe actuel incorrect → 400 Bad Request
+Utilisateur non trouvé → 404 Not Found
+Erreur serveur → 500 Internal Server Error
+
+
+
+États de chargement
+
+
+const [loading, setLoading] = useState(false);
+
+<button disabled={loading} className="disabled:opacity-50">
+  {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+</button>
+
+

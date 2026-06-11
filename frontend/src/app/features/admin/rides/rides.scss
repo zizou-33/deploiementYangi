@@ -1,0 +1,42 @@
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.filter-btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  background: var(--dark-2);
+  color: var(--gray-light);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: capitalize;
+
+  &:hover { background: var(--dark-3); color: var(--white); }
+  &.active { background: var(--primary); color: white; border-color: var(--primary); }
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .user-avatar {
+    width: 30px;
+    height: 30px;
+    background: var(--dark-3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+}

@@ -1,0 +1,166 @@
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-car"></i></div>
+        <span>Yan<em>gi</em></span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Menu</div>
+        <a routerLink="/customer/dashboard"><i class="fas fa-house"></i> Tableau de bord</a>
+        <a routerLink="/customer/create-ride"><i class="fas fa-plus-circle"></i> Nouvelle course</a>
+        <a routerLink="/customer/history"><i class="fas fa-clock-rotate-left"></i> Historique</a>
+        <a routerLink="/customer/profile" class="active"><i class="fas fa-user"></i> Mon profil</a>
+        <a routerLink="/customer/become-driver"><i class="fas fa-id-card"></i> Devenir chauffeur</a>
+        <a routerLink="/notifications"><i class="fas fa-bell"></i> Notifications</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button (click)="logout()"><i class="fas fa-right-from-bracket"></i> Déconnexion</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Mon profil</h1>
+      <p>Gérez vos informations personnelles</p>
+    </div>
+
+    <div class="page-content">
+      <div class="profile-grid">
+
+        <!-- Infos -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-user"></i> Informations</h3>
+            @if (!editMode) {
+              <button class="btn btn-ghost btn-sm" (click)="enableEdit()">
+                <i class="fas fa-pen"></i> Modifier
+              </button>
+            }
+          </div>
+
+          <div class="profile-avatar">
+            <div class="avatar-lg">{{ user?.username?.charAt(0)?.toUpperCase() }}</div>
+            <div>
+              <div class="avatar-name">{{ user?.username }}</div>
+              <div class="avatar-role">{{ user?.role }}</div>
+            </div>
+          </div>
+
+          @if (success) {
+            <div class="alert alert-success"><i class="fas fa-circle-check"></i> {{ success }}</div>
+          }
+          @if (error) {
+            <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>
+          }
+
+          @if (!editMode) {
+            <!-- Mode lecture -->
+            <div class="info-list">
+              <div class="info-row">
+                <i class="fas fa-user"></i>
+                <div>
+                  <span class="info-label">Nom d'utilisateur</span>
+                  <span class="info-value">{{ user?.username }}</span>
+                </div>
+              </div>
+              <div class="info-row">
+                <i class="fas fa-envelope"></i>
+                <div>
+                  <span class="info-label">Email</span>
+                  <span class="info-value">{{ user?.email }}</span>
+                </div>
+              </div>
+              <div class="info-row">
+                <i class="fas fa-phone"></i>
+                <div>
+                  <span class="info-label">Téléphone</span>
+                  <span class="info-value">{{ user?.phone }}</span>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <!-- Mode édition -->
+            <div class="form-group">
+              <label>Nom d'utilisateur</label>
+              <div class="input-wrapper">
+                <i class="fas fa-user"></i>
+                <input type="text" [(ngModel)]="form.username" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <div class="input-wrapper">
+                <i class="fas fa-envelope"></i>
+                <input type="email" [(ngModel)]="form.email" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Téléphone</label>
+              <div class="input-wrapper">
+                <i class="fas fa-phone"></i>
+                <input type="tel" [(ngModel)]="form.phone" />
+              </div>
+            </div>
+            <div class="edit-actions">
+              <button class="btn btn-ghost" (click)="cancelEdit()">Annuler</button>
+              <button class="btn btn-primary" (click)="updateProfile()" [disabled]="loading">
+                @if (loading) { <i class="fas fa-spinner fa-spin"></i> }
+                @else { <i class="fas fa-floppy-disk"></i> } Sauvegarder
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Mot de passe -->
+        <div class="card">
+          <div class="card-header">
+            <h3><i class="fas fa-lock"></i> Mot de passe</h3>
+          </div>
+
+          @if (pwSuccess) {
+            <div class="alert alert-success"><i class="fas fa-circle-check"></i> {{ pwSuccess }}</div>
+          }
+          @if (pwError) {
+            <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ pwError }}</div>
+          }
+
+          <div class="form-group">
+            <label>Ancien mot de passe</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input [type]="showPw ? 'text' : 'password'" [(ngModel)]="pwForm.old_password" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nouveau mot de passe</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input [type]="showPw ? 'text' : 'password'" [(ngModel)]="pwForm.new_password" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Confirmer</label>
+            <div class="input-wrapper">
+              <i class="fas fa-lock"></i>
+              <input [type]="showPw ? 'text' : 'password'" [(ngModel)]="pwForm.confirm" />
+            </div>
+          </div>
+
+          <div class="show-pw-toggle" (click)="showPw = !showPw">
+            <i [class]="showPw ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            {{ showPw ? 'Masquer' : 'Afficher' }} les mots de passe
+          </div>
+
+          <button class="btn btn-outline btn-full" (click)="changePassword()" [disabled]="pwLoading">
+            @if (pwLoading) { <i class="fas fa-spinner fa-spin"></i> Modification... }
+            @else { <i class="fas fa-key"></i> Modifier le mot de passe }
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

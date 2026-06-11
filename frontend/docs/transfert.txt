@@ -1,0 +1,546 @@
+# PAGE TRANSFER - Envoyer de l'argent
+
+## 📄 FRONTEND (app/transfer/page.tsx)
+
+### Structure
+- Page AVEC sidebar et topbar
+- Layout en 2 colonnes : Formulaire à gauche (8/12) + Récapitulatif à droite (4/12)
+- Modal de confirmation avec code PIN
+
+### Composants clés
+
+#### 1. Sélection du bénéficiaire
+```typescript
+<div className="grid grid-cols-4 gap-3">
+  {beneficiaries.slice(0, 4).map((ben) => (
+    <button
+      key={ben.id}
+      type="button"
+      onClick={() => setSelectedBeneficiary(ben)}
+      className={`flex flex-col items-center p-3 rounded-xl transition ${
+        selectedBeneficiary?.id === ben.id
+          ? 'bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border-2 border-[#C9A84C]'
+          : 'bg-[#F8F7F4] border border-[#E0D9CC] hover:border-[#C9A84C]/50'
+      }`}
+    >
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 ${
+        selectedBeneficiary?.id === ben.id ? 'bg-[#C9A84C]/30 text-[#E8C878]' : 'bg-[#E3F2FD] text-[#2196F3]'
+      }`}>
+        {ben.firstName.charAt(0)}{ben.lastName.charAt(0)}
+      </div>
+      <p className="text-xs font-bold">{ben.firstName.charAt(0)}. {ben.lastName.charAt(0)}.</p>
+      <p className="text-[10px]">{ben.country} · {ben.currency}</p>
+    </button>
+  ))}
+</div>
+
+2. Affichage du bénéficiaire sélectionné
+
+
+{selectedBeneficiary && (
+  <div className="mt-4 p-4 bg-[#F5F3EE] border border-[#E8C878] rounded-xl">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-[#C9A84C]/25 flex items-center justify-center text-[#C9A84C] font-bold">
+          {selectedBeneficiary.firstName.charAt(0)}{selectedBeneficiary.lastName.charAt(0)}
+        </div>
+        <div>
+          <p className="font-bold text-[#1A1A2E]">{selectedBeneficiary.firstName} {selectedBeneficiary.lastName}</p>
+          <p className="text-xs text-[#666]">{selectedBeneficiary.email} · {selectedBeneficiary.country}</p>
+          <p className="text-[11px] text-[#888]">Compte : {selectedBeneficiary.userCode} · {selectedBeneficiary.currency}</p>
+        </div>
+      </div>
+      <button onClick={() => setSelectedBeneficiary(null)} className="text-[#C9A84C] text-sm">
+        ✎ Modifier
+      </button>
+    </div>
+  </div>
+)}
+
+
+3. Saisie du montant
+
+<div className="bg-[#1A1A2E] border border-[#C9A84C] rounded-xl p-4">
+  <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+      <span className="text-lg">🇨</span>
+      <span className="text-[#E8C878] font-bold text-sm">XAF</span>
+    </div>
+    <div className="w-px h-8 bg-white/15" />
+    <input
+      type="number"
+      value={amount}
+      onChange={(e) => setAmount(e.target.value)}
+      className="flex-1 bg-transparent text-2xl font-bold text-white outline-none text-center"
+      placeholder="50 000"
+    />
+    <span className="text-xs text-[#9999BB]">Solde: {user?.balance.toLocaleString()} XAF</span>
+  </div>
+</div>
+
+
+4. Calcul automatique du montant reçu
+
+
+const calculateReceivedAmount = (): number => {
+  if (!selectedBeneficiary || !amount) return 0;
+  const rate = exchangeRates[`XAF_${selectedBeneficiary.currency}`] || 0.001524;
+  return parseFloat(amount) * rate;
+};
+
+const calculateFees = (): number => {
+  return parseFloat(amount || '0') * 0.005; // 0.5% de frais
+};
+
+
+5. Modal de confirmation avec code PIN
+
+{showPinModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-3xl p-8 max-w-md w-full">
+      <div className="text-center mb-6">
+        <div className="text-6xl mb-4">🔐</div>
+        <h2 className="text-2xl font-bold mb-2 text-[#1A1A2E]">Confirmation de transfert</h2>
+        <p className="text-[#888] text-sm">Entrez votre code PIN à 4 chiffres pour confirmer</p>
+      </div>
+
+      <input
+        type="password"
+        maxLength={4}
+        value={pinCode}
+        onChange={(e) => setPinCode(e.target.value.replace(/\D/g, ''))}
+        className="w-full px-4 py-4 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl text-center text-2xl font-bold tracking-widest"
+        placeholder="••••"
+      />
+
+      <div className="flex gap-3 mt-6">
+        <button onClick={() => setShowPinModal(false)} className="flex-1 py-3 bg-[#F5F3EE] rounded-xl">
+          Annuler
+        </button>
+        <button
+          onClick={handleConfirmTransfer}
+          disabled={loading || pinCode.length !== 4}
+          className="flex-1 py-3 bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-[#E8C878] rounded-xl font-bold"
+        >
+          {loading ? 'Traitement...' : 'Confirmer'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
+Logique de transfert
+
+const handleConfirmTransfer = async () => {
+  if (pinCode.length !== 4) {
+    toast.error('Le code PIN doit contenir 4 chiffres');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const receivedAmount = calculateReceivedAmount();
+    const fees = calculateFees();
+    const rate = exchangeRates[`XAF_${selectedBeneficiary!.currency}`] || 0.001524;
+
+    await transactionApi.create({
+      receiverId: selectedBeneficiary!.beneficiaryId,
+      amount: parseFloat(amount),
+      currency: 'XAF',
+      receivedAmount,
+      receivedCurrency: selectedBeneficiary!.currency,
+      exchangeRate: 1 / rate,
+      fees,
+      type: 'send',
+      description: `Transfert à ${selectedBeneficiary!.firstName} ${selectedBeneficiary!.lastName}`,
+      pinCode,
+    });
+
+    toast.success('Transfert effectué avec succès!');
+    router.push('/history');
+  } catch (error) {
+    toast.error('Erreur lors du transfert');
+  } finally {
+    setLoading(false);
+    setShowPinModal(false);
+    setPinCode('');
+  }
+};
+
+
+
+BACKEND (app/api/transactions/route.ts)
+Endpoint POST /api/transactions
+Logique serveur
+
+export async function POST(request: NextRequest) {
+  // 1. Vérification de l'authentification
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  // 2. Récupération des données
+  const body = await request.json();
+  const { receiverId, amount, currency, receivedAmount, receivedCurrency, exchangeRate, fees, type, description, pinCode } = body;
+  
+  // 3. Validation du montant
+  if (!amount || amount <= 0) {
+    return NextResponse.json({ error: 'Le montant doit être supérieur à 0' }, { status: 400 });
+  }
+  
+  if (amount > 10000000) {
+    return NextResponse.json({ error: 'Le montant maximum est de 10 000 000' }, { status: 400 });
+  }
+  
+  // 4. Récupération de l'expéditeur
+  const sender = await prisma.user.findUnique({ where: { id: decoded.id } });
+  if (!sender) {
+    return NextResponse.json({ error: 'Expéditeur non trouvé' }, { status: 404 });
+  }
+  
+  // 5. Vérification du code PIN
+  if (sender.pinCode !== pinCode) {
+    return NextResponse.json({ error: 'Code PIN incorrect' }, { status: 400 });
+  }
+  
+  // 6. Vérification du solde
+  if (sender.balance < amount + fees) {
+    return NextResponse.json({ 
+      error: `Solde insuffisant. Solde actuel: ${sender.balance} ${sender.currency}` 
+    }, { status: 400 });
+  }
+  
+  // 7. Récupération du destinataire
+  const receiver = await prisma.user.findUnique({ where: { id: receiverId } });
+  if (!receiver) {
+    return NextResponse.json({ error: 'Destinataire non trouvé' }, { status: 404 });
+  }
+  
+  // 8. Calcul des nouveaux soldes
+  const newSenderBalance = sender.balance - (amount + fees);
+  const newReceiverBalance = receiver.balance + receivedAmount;
+  
+  // 9. Transaction atomique (tout ou rien)
+  const transaction = await prisma.$transaction(async (tx) => {
+    // a. Créer la transaction
+    const newTransaction = await tx.transaction.create({
+      data: {
+        senderId: decoded.id,
+        receiverId,
+        amount: parseFloat(amount.toString()),
+        currency,
+        receivedAmount: parseFloat(receivedAmount.toString()),
+        receivedCurrency,
+        exchangeRate: parseFloat(exchangeRate.toString()),
+        fees: parseFloat(fees.toString()),
+        status: 'completed',
+        type: type || 'send',
+        description: description || '',
+        completedAt: new Date(),
+      },
+    });
+    
+    // b. Débiter l'expéditeur
+    await tx.user.update({
+      where: { id: decoded.id },
+      data: { balance: newSenderBalance },
+    });
+    
+    // c. Créditer le destinataire
+    await tx.user.update({
+      where: { id: receiverId },
+      data: { balance: newReceiverBalance },
+    });
+    
+    // d. Créer les notifications
+    await tx.notification.create({
+      data: {
+        userId: receiverId,
+        type: 'transfer_received',
+        message: `Vous avez reçu ${receivedAmount} ${receivedCurrency} de ${sender.firstName} ${sender.lastName}`,
+      },
+    });
+    
+    await tx.notification.create({
+      data: {
+        userId: decoded.id,
+        type: 'transfer_sent',
+        message: `Vous avez envoyé ${amount} ${currency} à ${receiver.firstName} ${receiver.lastName}`,
+      },
+    });
+    
+    return newTransaction;
+  });
+  
+  // 10. Retourner la confirmation
+  return NextResponse.json({
+    success: true,
+    message: 'Transaction completed',
+    data: { ...transaction, createdAt: transaction.createdAt.toISOString() },
+  }, { status: 201 });
+}
+
+
+
+🗄️ BASE DE DONNÉES
+Tables modifiées
+1. Transaction (création)
+
+
+Transaction {
+  id: "clx456def...",
+  senderId: "clx123abc...",
+  receiverId: "clx789ghi...",
+  amount: 50000,
+  currency: "XAF",
+  receivedAmount: 76.28,
+  receivedCurrency: "EUR",
+  exchangeRate: 655.57,
+  fees: 250,
+  status: "completed",
+  type: "send",
+  description: "Transfert à Marie Dupont",
+  createdAt: "2025-01-15T14:32:00Z",
+  completedAt: "2025-01-15T14:32:00Z"
+}
+
+
+
+2. User - Expéditeur (mise à jour du solde)
+
+// Avant
+User {
+  id: "clx123abc...",
+  balance: 327980,
+}
+
+// Après
+User {
+  id: "clx123abc...",
+  balance: 277730, // 327980 - 50000 - 250
+}
+
+
+
+3. User - Destinataire (mise à jour du solde)
+
+// Avant
+User {
+  id: "clx789ghi...",
+  balance: 500000,
+}
+
+// Après
+User {
+  id: "clx789ghi...",
+  balance: 500076.28, // 500000 + 76.28
+}
+
+
+4. Notification (2 créations)
+
+
+// Notification pour le destinataire
+Notification {
+  id: "clx001...",
+  userId: "clx789ghi...",
+  type: "transfer_received",
+  message: "Vous avez reçu 76.28 EUR de Jean-Paul Nkemeni",
+  isRead: false,
+  createdAt: "2025-01-15T14:32:00Z"
+}
+
+// Notification pour l'expéditeur
+Notification {
+  id: "clx002...",
+  userId: "clx123abc...",
+  type: "transfer_sent",
+  message: "Vous avez envoyé 50000 XAF à Marie Dupont",
+  isRead: false,
+  createdAt: "2025-01-15T14:32:00Z"
+}
+
+
+
+🔄 FLUX COMPLET DU TRANSFERT
+
+
+┌──────────────────┐
+│  Sélection       │  Utilisateur choisit un bénéficiaire
+│  bénéficiaire    │  parmi ses bénéficiaires acceptés
+└─────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Saisie montant  │  Utilisateur entre le montant à envoyer
+│  (XAF)           │  Calcul automatique des frais (0.5%)
+└────────┬─────────┘
+         │
+         ▼
+──────────────────┐
+│  Calcul          │  Montant reçu = amount * taux_de_change
+│  automatique     │  Frais = amount * 0.005
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Affichage       │  Récapitulatif à droite
+│  récapitulatif   │  - Montant envoyé
+│                  │  - Montant reçu
+│                  │  - Frais
+│                  │  - Taux de conversion
+└────────┬─────────
+         │
+         ▼
+┌──────────────────┐
+│  Bouton          │  Ouverture de la modal PIN
+│  Continuer       │
+└────────┬─────────┘
+         │
+         ▼
+──────────────────┐
+│  Modal PIN       │  Utilisateur entre son code PIN à 4 chiffres
+│  (confirmation)  │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  POST            │  Envoi des données au backend
+│  /api/           │  - receiverId
+│  transactions    │  - amount, currency
+│                  │  - receivedAmount, receivedCurrency
+│                  │  - exchangeRate, fees
+│                  │  - pinCode
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Backend         │  - Vérification token JWT
+│  validation      │  - Validation montant (>0, <10M)
+│                  │  - Vérification PIN
+│                  │  - Vérification solde
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Transaction     │  - Création transaction
+│  atomique        │  - Débit expéditeur
+│  (Prisma)        │  - Crédit destinataire
+│                  │  - Création notifications
+└────────┬─────────
+         │
+         ▼
+┌──────────────────┐
+│  Succès          │  - Toast "Transfert effectué"
+│                  │  - Redirection vers /history
+└──────────────────┘
+
+
+
+
+📊 DONNÉES ÉCHANGÉES
+Request (Frontend → Backend)
+
+
+{
+  "receiverId": "clx789ghi...",
+  "amount": 50000,
+  "currency": "XAF",
+  "receivedAmount": 76.28,
+  "receivedCurrency": "EUR",
+  "exchangeRate": 655.57,
+  "fees": 250,
+  "type": "send",
+  "description": "Transfert à Marie Dupont",
+  "pinCode": "1234"
+}
+
+
+Response (Backend → Frontend)
+
+{
+  "success": true,
+  "message": "Transaction completed",
+  "data": {
+    "id": "clx456def...",
+    "senderId": "clx123abc...",
+    "receiverId": "clx789ghi...",
+    "amount": 50000,
+    "currency": "XAF",
+    "receivedAmount": 76.28,
+    "receivedCurrency": "EUR",
+    "exchangeRate": 655.57,
+    "fees": 250,
+    "status": "completed",
+    "type": "send",
+    "description": "Transfert à Marie Dupont",
+    "createdAt": "2025-01-15T14:32:00.000Z",
+    "completedAt": "2025-01-15T14:32:00.000Z"
+  }
+}
+
+
+
+✅ FONCTIONNALITÉS
+Sélection de bénéficiaire visuelle (4 premiers)
+Affichage détaillé du bénéficiaire sélectionné
+Saisie du montant avec affichage du solde
+Calcul automatique du montant reçu
+Calcul automatique des frais (0.5%)
+Affichage du taux de conversion
+Récapitulatif complet à droite
+Modal de confirmation avec code PIN
+Validation du PIN (4 chiffres)
+Transaction atomique (tout ou rien)
+Création de notifications
+Redirection vers l'historique après succès
+Gestion des erreurs (solde insuffisant, PIN incorrect)
+Design responsive et fidèle au SVG
+
+
+
+
+🔐 SÉCURITÉ
+Code PIN
+Vérifié côté serveur avant chaque transaction
+4 chiffres uniquement
+Stocké en clair dans la base de données (pour validation rapide)
+Validation des montants
+Montant > 0
+Montant < 10 000 000 (limite maximale)
+Solde suffisant (amount + fees)
+Transaction atomique
+Utilisation de prisma.$transaction()
+Si une étape échoue, tout est annulé
+Garantie d'intégrité des données
+Authentification
+Token JWT requis pour chaque requête
+Vérification de l'identité de l'expéditeur
+Impossible de transférer à soi-même (vérifié côté bénéficiaires)
+🐛 GESTION DES ERREURS
+Erreurs frontend
+Aucun bénéficiaire sélectionné → "Veuillez remplir tous les champs"
+Montant <= 0 → "Le montant doit être supérieur à 0"
+Solde insuffisant → "Solde insuffisant"
+PIN != 4 chiffres → "Le code PIN doit contenir 4 chiffres"
+Erreurs backend
+Token invalide → 401 Unauthorized
+Montant invalide → 400 Bad Request
+PIN incorrect → 400 Bad Request
+Solde insuffisant → 400 Bad Request
+Destinataire non trouvé → 404 Not Found
+Erreur serveur → 500 Internal Server Error
+
+
+État de loading
+
+const [loading, setLoading] = useState(false);
+
+// Pendant la requête
+<button disabled={loading} className="disabled:opacity-50">
+  {loading ? 'Traitement...' : 'Confirmer'}
+</button>
+
+
+

@@ -1,0 +1,325 @@
+# PAGE SIGNUP - Création de compte
+
+## 📄 FRONTEND (app/signup/page.tsx)
+
+### Structure
+- Page sans sidebar (authentification uniquement)
+- Layout en 2 colonnes : panneau branding à gauche + formulaire multi-étapes à droite
+- 3 étapes : Informations → Code PIN → Confirmation avec code unique
+
+### Les 3 étapes
+
+#### Étape 1 : Informations personnelles
+- Nom et Prénom (2 colonnes)
+- Adresse email
+- Numéro de téléphone (avec indicatif dynamique selon le pays)
+- Pays de résidence (dropdown)
+- Date de naissance
+- Devise de compte (4 options : XAF, USD, EUR, GBP)
+- Mot de passe + confirmation
+
+#### Étape 2 : Code PIN de sécurité
+- Code PIN à 4 chiffres
+- Confirmation du code PIN
+- Explications sur la sécurité
+
+#### Étape 3 : Confirmation
+- Affichage du code utilisateur unique (ex: DM7X9K2)
+- Bouton pour copier le code
+- Bouton pour se connecter
+
+### Logique React
+```typescript
+const [step, setStep] = useState(1);
+const [formData, setFormData] = useState({
+  firstName: '', lastName: '', email: '', phone: '',
+  country: '', birthDate: '', currency: 'XAF',
+  password: '', confirmPassword: '', pinCode: '', confirmPinCode: '',
+});
+
+// Transition étape 1 → 2
+const handleStep1Submit = (e: FormEvent) => {
+  e.preventDefault();
+  if (formData.password !== formData.confirmPassword) {
+    toast.error('Les mots de passe ne correspondent pas');
+    return;
+  }
+  setStep(2);
+};
+
+// Transition étape 2 → 3 (création du compte)
+const handleStep2Submit = (e: FormEvent) => {
+  e.preventDefault();
+  if (formData.pinCode.length !== 4) {
+    toast.error('Le code PIN doit contenir 4 chiffres');
+    return;
+  }
+  createAccount();
+};
+
+const createAccount = async () => {
+  const response = await authApi.register({
+    ...formData,
+    pinCode: formData.pinCode
+  });
+  setGeneratedCode(response.data.data.user.userCode);
+  setStep(3);
+};
+
+
+
+
+
+
+
+Indicateur de pays dynamique
+const countryPhoneCodes: Record<string, string> = {
+  'Cameroun': '+237',
+  'Senegal': '+221',
+  "Cote d'Ivoire": '+225',
+  'France': '+33',
+  // ...
+};
+
+// Affichage dynamique dans le formulaire
+<span>{formData.country ? countryPhoneCodes[formData.country] : '+237'}</span>
+
+
+
+
+BACKEND (app/api/auth/register/route.ts)
+Endpoint
+Method : POST
+URL : /api/auth/register
+Body : { email, phone, password, pinCode, firstName, lastName, country, birthDate, currency }
+
+
+
+Logique serveur
+
+export async function POST(request: NextRequest) {
+  // 1. Récupérer les données
+  const body = await request.json();
+  
+  // 2. Vérifier si l'email existe déjà
+  const existingUser = await prisma.user.findUnique({ 
+    where: { email: body.email } 
+  });
+  if (existingUser) {
+    return NextResponse.json({ error: 'User already exists' }, { status: 400 });
+  }
+  
+  // 3. Valider le code PIN
+  if (!body.pinCode || body.pinCode.length !== 4) {
+    return NextResponse.json({ error: 'PIN code must be 4 digits' }, { status: 400 });
+  }
+  
+  // 4. Hasher le mot de passe
+  const hashedPassword = await bcrypt.hash(body.password, 10);
+  
+  // 5. Générer le code utilisateur unique
+  const userCode = generateUserCode(); // ex: "DM7X9K2"
+  
+  // 6. Calculer le solde initial (500 EUR convertis)
+  const rate = eurToCurrency[body.currency || 'XAF'] || 655.96;
+  const initialBalance = 500 * rate;
+  
+  // 7. Créer l'utilisateur dans la base de données
+  const user = await prisma.user.create({
+    data: {
+      email: body.email,
+      phone: body.phone,
+      password: hashedPassword,
+      pinCode: body.pinCode,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      country: body.country,
+      birthDate: body.birthDate,
+      currency: body.currency || 'XAF',
+      userCode: userCode,
+      balance: initialBalance,
+    },
+  });
+  
+  // 8. Générer le token JWT
+  const token = jwt.sign(
+    { id: user.id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+  
+  // 9. Retourner les données
+  return NextResponse.json({
+    success: true,
+    data: { user, token }
+  }, { status: 201 });
+}
+
+// Fonction de génération de code unique
+function generateUserCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = 'DM';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+
+
+Taux de conversion pour le solde initial
+const eurToCurrency: Record<string, number> = {
+  'XAF': 655.96,   // 500 EUR = 327 980 XAF
+  'USD': 1.08,     // 500 EUR = 540 USD
+  'EUR': 1.0,      // 500 EUR = 500 EUR
+  'GBP': 0.86,     // 500 EUR = 430 GBP
+};
+
+
+🗄️ BASE DE DONNÉES
+Création d'un utilisateur
+
+// Avant (table vide)
+User[]
+
+// Après inscription
+User {
+  id: "clx123abc...",
+  email: "jeanpaul@example.com",
+  phone: "+237 677 123 456",
+  password: "$2b$10$N9qo8uLOickgx2ZMRZoMye...", // hashé
+  pinCode: "1234",
+  firstName: "Jean-Paul",
+  lastName: "Nkemeni",
+  country: "Cameroun",
+  birthDate: "1992-03-15",
+  currency: "XAF",
+  userCode: "DM7X9K2",
+  balance: 327980,
+  isVerified: false,
+  createdAt: "2025-01-15T10:30:00Z",
+  updatedAt: "2025-01-15T10:30:00Z"
+}
+
+
+
+Index et contraintes
+email : UNIQUE (un seul compte par email)
+userCode : UNIQUE (code unique pour les bénéficiaires)
+id : PRIMARY KEY (généré automatiquement avec cuid())
+
+
+ FLUX COMPLET D'INSCRIPTION
+
+
+┌──────────────┐
+│   Étape 1    │  Informations personnelles
+│              │  - Nom, Prénom, Email, Téléphone
+│              │  - Pays, Date de naissance
+│              │  - Devise, Mot de passe
+└──────┬───────┘
+       │ Validation frontend
+       ▼
+┌──────────────┐
+│   Étape 2    │  Code PIN de sécurité
+│              │  - Code à 4 chiffres
+│              │  - Confirmation du code
+└─────────────┘
+       │ Validation frontend
+       ▼
+┌──────────────┐
+│   Backend    │  POST /api/auth/register
+│              │  - Vérification email unique
+│              │  - Hashage mot de passe
+│              │  - Génération code unique
+│              │  - Calcul solde initial
+│              │  - Création en base de données
+──────┬───────┘
+       │ Succès
+       ▼
+┌──────────────┐
+│   Étape 3    │  Confirmation
+│              │  - Affichage code unique (DM7X9K2)
+│              │  - Bouton copier le code
+│              │  - Redirection vers login
+└──────────────┘
+
+
+
+DONNÉES ÉCHANGÉES
+Request (Frontend → Backend)
+{
+  "email": "jeanpaul@example.com",
+  "phone": "+237 677 123 456",
+  "password": "monMotDePasse123",
+  "pinCode": "1234",
+  "firstName": "Jean-Paul",
+  "lastName": "Nkemeni",
+  "country": "Cameroun",
+  "birthDate": "1992-03-15",
+  "currency": "XAF"
+}
+
+
+Response (Backend → Frontend)
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "clx123abc...",
+      "email": "jeanpaul@example.com",
+      "firstName": "Jean-Paul",
+      "lastName": "Nkemeni",
+      "currency": "XAF",
+      "userCode": "DM7X9K2",
+      "balance": 327980,
+      "createdAt": "2025-01-15T10:30:00Z"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+
+✅ FONCTIONNALITÉS
+Formulaire multi-étapes (3 étapes)
+Validation frontend à chaque étape
+Indicateur de pays dynamique
+Sélection de devise visuelle (4 options)
+Code PIN à 4 chiffres
+Génération de code utilisateur unique
+Calcul automatique du solde initial
+Hashage du mot de passe
+Affichage du code unique à la fin
+Bouton pour copier le code
+Design responsive et fidèle au SVG
+SÉCURITÉ
+Mot de passe
+Hashé avec bcrypt (10 rounds)
+Jamais stocké en clair
+Validation : minimum 8 caractères
+Code PIN
+Stocké en clair (pour validation rapide des transactions)
+4 chiffres uniquement
+Utilisé pour confirmer les transferts
+Code utilisateur
+Généré aléatoirement (2 lettres + 6 caractères alphanumériques)
+Unique dans la base de données
+Utilisé pour ajouter des bénéficiaires
+
+
+🐛 GESTION DES ERREURS
+Erreurs frontend
+Mots de passe non correspondants
+Code PIN != 4 chiffres
+Champs requis vides
+Erreurs backend
+Email déjà utilisé → "User already exists"
+Code PIN invalide → "PIN code must be 4 digits"
+Erreur serveur → "Server error"
+Validation
+Email : format valide requis
+Téléphone : format libre avec indicatif
+Date de naissance : format date
+Devise : une des 4 options (XAF, USD, EUR, GBP)
+
+
+

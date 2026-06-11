@@ -1,0 +1,45 @@
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-car"></i></div>
+        <span>Yan<em>gi</em></span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Navigation</div>
+        <a routerLink="/notifications"><i class="fas fa-arrow-left"></i> Retour</a>
+      </div>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Détail notification</h1>
+    </div>
+    <div class="page-content">
+      @if (loading) {
+        <div class="loading-wrapper"><div class="spinner"></div></div>
+      } @else if (notif) {
+        <div class="card" style="max-width:600px">
+          <div class="notif-detail-icon">
+            <i class="fas fa-bell"></i>
+          </div>
+          <div class="notif-detail-msg">{{ notif.message }}</div>
+          <div class="notif-detail-date">
+            <i class="fas fa-calendar"></i>
+            {{ notif.created_at | date:'dd/MM/yyyy à HH:mm' }}
+          </div>
+          <div style="margin-top:16px">
+            @if (notif.is_read) {
+              <span class="badge badge-completed"><i class="fas fa-check"></i> Lu</span>
+            } @else {
+              <span class="badge badge-pending">Non lu</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </main>
+</div>

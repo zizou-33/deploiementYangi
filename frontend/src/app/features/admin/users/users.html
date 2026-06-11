@@ -1,0 +1,93 @@
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-car"></i></div>
+        <span>Yan<em>gi</em></span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Administration</div>
+        <a routerLink="/admin/dashboard"><i class="fas fa-chart-line"></i> Tableau de bord</a>
+        <a routerLink="/admin/users" class="active"><i class="fas fa-users"></i> Utilisateurs</a>
+        <a routerLink="/admin/requests"><i class="fas fa-file-alt"></i> Candidatures</a>
+        <a routerLink="/admin/rides"><i class="fas fa-route"></i> Courses</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button (click)="logout()"><i class="fas fa-right-from-bracket"></i> Déconnexion</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Utilisateurs</h1>
+      <p>Gérez tous les comptes de la plateforme</p>
+    </div>
+    <div class="page-content">
+      @if (msg) {
+        <div class="alert alert-{{ msgType === 'success' ? 'success' : 'error' }}" style="margin-bottom:20px">
+          <i class="fas fa-{{ msgType === 'success' ? 'circle-check' : 'circle-exclamation' }}"></i> {{ msg }}
+        </div>
+      }
+      @if (loading) {
+        <div class="loading-wrapper"><div class="spinner"></div><span>Chargement...</span></div>
+      } @else {
+        <div class="table-wrapper">
+          <table>
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>Utilisateur</th>
+              <th>Email</th>
+              <th>Téléphone</th>
+              <th>Rôle</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (user of users; track user.id) {
+                <tr>
+                  <td>{{ user.id }}</td>
+                  <td>
+                    <div class="user-cell">
+                      <div class="user-avatar">{{ user.username.charAt(0).toUpperCase() }}</div>
+                      <span>{{ user.username }}</span>
+                    </div>
+                  </td>
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.phone }}</td>
+                  <td><span class="badge badge-{{ roleColor(user.role) }}">{{ user.role }}</span></td>
+                  <td>
+                    @if (user.is_active) {
+                      <span class="status-dot active"><i class="fas fa-circle"></i> Actif</span>
+                    } @else {
+                      <span class="status-dot blocked"><i class="fas fa-circle"></i> Bloqué</span>
+                    }
+                  </td>
+                  <td>
+                    @if (user.role !== 'admin') {
+                      @if (user.is_active) {
+                        <button class="btn btn-danger btn-sm" (click)="block(user.id)">
+                          <i class="fas fa-ban"></i> Bloquer
+                        </button>
+                      } @else {
+                        <button class="btn btn-success btn-sm" (click)="unblock(user.id)">
+                          <i class="fas fa-check"></i> Débloquer
+                        </button>
+                      }
+                    } @else {
+                      <span style="color:var(--gray);font-size:0.82rem">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </main>
+</div>

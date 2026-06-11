@@ -1,0 +1,539 @@
+# PAGE HISTORY - Historique des transactions
+
+## 📄 FRONTEND (app/history/page.tsx)
+
+### Structure
+- Page AVEC sidebar et topbar
+- Layout vertical : Stats en haut + Filtres + Tableau des transactions
+- Pagination en bas
+
+### Composants clés
+
+#### 1. Cartes de statistiques (4 cartes)
+```typescript
+<div className="grid grid-cols-4 gap-6">
+  <div className="bg-white rounded-2xl p-6 shadow-sm">
+    <p className="text-xs text-[#888] tracking-wider mb-2">TOTAL ENVOYÉ</p>
+    <p className="text-2xl font-bold text-[#1A1A2E]">{stats.totalSent.toLocaleString()} XAF</p>
+    <p className="text-xs text-[#E53935] mt-2">↑ transactions envoyées</p>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm">
+    <p className="text-xs text-[#888] tracking-wider mb-2">TOTAL REÇU</p>
+    <p className="text-2xl font-bold text-[#1A1A2E]">{stats.totalReceived.toLocaleString()} XAF</p>
+    <p className="text-xs text-[#4CAF50] mt-2">↓ transactions reçues</p>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm">
+    <p className="text-xs text-[#888] tracking-wider mb-2">EN ATTENTE</p>
+    <p className="text-2xl font-bold text-[#1A1A2E]">{stats.pending.toLocaleString()} XAF</p>
+    <p className="text-xs text-[#FF9800] mt-2">⏳ en cours de traitement</p>
+  </div>
+  <div className="bg-white rounded-2xl p-6 shadow-sm">
+    <p className="text-xs text-[#888] tracking-wider mb-2">FRAIS PAYÉS</p>
+    <p className="text-2xl font-bold text-[#1A1A2E]">{stats.fees.toLocaleString()} XAF</p>
+    <p className="text-xs text-[#888] mt-2">0.5% moy.</p>
+  </div>
+</div>
+
+
+
+2. Barre de filtres
+
+<div className="bg-white rounded-xl p-4 shadow-sm flex items-center justify-between">
+  <input
+    type="text"
+    placeholder="🔍  Rechercher une transaction..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="pl-4 pr-4 py-2 bg-[#F5F3EE] border border-[#E0D9CC] rounded-lg outline-none focus:border-[#C9A84C] text-sm w-72"
+  />
+  <div className="flex gap-2">
+    {filters.map((filter) => (
+      <button
+        key={filter.key}
+        onClick={() => { setCurrentFilter(filter.key); setPage(1); }}
+        className={`px-4 py-2 rounded-lg text-xs font-bold transition ${
+          currentFilter === filter.key
+            ? 'bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-[#E8C878]'
+            : 'bg-[#F5F3EE] text-[#888] hover:bg-[#EDE9DF]'
+        }`}
+      >
+        {filter.label}
+      </button>
+    ))}
+  </div>
+</div>
+
+
+
+3. Tableau des transactions
+
+<div className="bg-white rounded-3xl shadow-sm overflow-hidden">
+  {/* En-tête du tableau */}
+  <div className="bg-[#F8F7F4] px-6 py-4 border-b border-[#E0D9CC]">
+    <div className="grid grid-cols-12 gap-4 text-xs font-bold text-[#888] tracking-wider">
+      <div className="col-span-1">TYPE</div>
+      <div className="col-span-3">DESTINATAIRE / EXPÉDITEUR</div>
+      <div className="col-span-2 text-right">MONTANT ENVOYÉ</div>
+      <div className="col-span-2 text-right">MONTANT REÇU</div>
+      <div className="col-span-2">DATE</div>
+      <div className="col-span-1">STATUT</div>
+      <div className="col-span-1 text-right">DÉTAIL</div>
+    </div>
+  </div>
+
+  {/* Lignes du tableau */}
+  <div className="divide-y divide-[#F5F3EE]">
+    {filteredTransactions.map((transaction) => (
+      <div key={transaction.id} className={`px-6 py-4 hover:bg-[#F5F3EE]/50 transition ${
+        transaction.status === 'pending' ? 'bg-[#FFFBF0]' :
+        transaction.status === 'cancelled' ? 'bg-[#FFF5F5]' : ''
+      }`}>
+        <div className="grid grid-cols-12 gap-4 items-center">
+          {/* Type */}
+          <div className="col-span-1">
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${
+                transaction.direction === 'sent' ? 'bg-[#E8F5E9]' : 'bg-[#E3F2FD]'
+              }`}>
+                {transaction.direction === 'sent' ? '✈️' : '📥'}
+              </div>
+              <span className={`text-xs font-bold ${
+                transaction.direction === 'sent' ? 'text-[#4CAF50]' : 'text-[#2196F3]'
+              }`}>
+                {transaction.direction === 'sent' ? 'ENVOI' : 'REÇU'}
+              </span>
+            </div>
+          </div>
+
+          {/* Destinataire/Expéditeur */}
+          <div className="col-span-3">
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full bg-[#E8C878]/30 flex items-center justify-center text-[10px] font-bold text-[#C9A84C]">
+                {transaction.counterpartyName?.charAt(0)}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#1A1A2E]">{transaction.counterpartyName}</p>
+                <p className="text-[11px] text-[#888]">{transaction.counterpartyCode}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Montant envoyé */}
+          <div className="col-span-2 text-right">
+            <p className="text-sm font-bold text-[#1A1A2E]">{transaction.amount.toLocaleString()} {transaction.currency}</p>
+          </div>
+
+          {/* Montant reçu */}
+          <div className="col-span-2 text-right">
+            <p className="text-sm font-bold text-[#1A1A2E]">{transaction.receivedAmount.toLocaleString()} {transaction.receivedCurrency}</p>
+          </div>
+
+          {/* Date */}
+          <div className="col-span-2">
+            <p className="text-xs text-[#444]">{new Date(transaction.createdAt).toLocaleDateString('fr-FR')}</p>
+            <p className="text-[11px] text-[#888]">{new Date(transaction.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</p>
+          </div>
+
+          {/* Statut */}
+          <div className="col-span-1">
+            <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-bold ${
+              transaction.status === 'completed' ? 'bg-[#E8F5E9] text-[#4CAF50]' :
+              transaction.status === 'pending' ? 'bg-[#FFF3E0] text-[#FF9800]' :
+              'bg-[#FFEBEE] text-[#E53935]'
+            }`}>
+              {transaction.status === 'completed' ? 'COMPLÉTÉ' :
+               transaction.status === 'pending' ? 'EN ATTENTE' : 'ANNULÉ'}
+            </span>
+          </div>
+
+          {/* Détail */}
+          <div className="col-span-1 text-right">
+            <button className="text-[#C9A84C] font-bold text-lg hover:scale-110 transition">→</button>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+
+
+4. Pagination
+
+{totalPages > 1 && (
+  <div className="p-4 border-t border-[#F5F3EE] flex items-center justify-between">
+    <p className="text-xs text-[#888]">Page {page} sur {totalPages} · {transactions.length} transactions au total</p>
+    <div className="flex gap-1">
+      <button
+        onClick={() => setPage(p => Math.max(1, p - 1))}
+        disabled={page === 1}
+        className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#F5F3EE] text-[#888] text-sm disabled:opacity-50"
+      >
+        «
+      </button>
+      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+        const pageNum = page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i;
+        if (pageNum < 1 || pageNum > totalPages) return null;
+        return (
+          <button
+            key={pageNum}
+            onClick={() => setPage(pageNum)}
+            className={`w-9 h-9 flex items-center justify-center rounded-lg text-sm font-bold ${
+              page === pageNum
+                ? 'bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-[#E8C878]'
+                : 'bg-[#F5F3EE] text-[#888] hover:bg-[#EDE9DF]'
+            }`}
+          >
+            {pageNum}
+          </button>
+        );
+      })}
+      <button
+        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+        disabled={page === totalPages}
+        className="w-9 h-9 flex items-center justify-center rounded-lg bg-[#F5F3EE] text-[#888] text-sm disabled:opacity-50"
+      >
+        »
+      </button>
+    </div>
+  </div>
+)}
+
+
+
+Logique React
+
+const [transactions, setTransactions] = useState<Transaction[]>([]);
+const [loading, setLoading] = useState(true);
+const [currentFilter, setCurrentFilter] = useState('all');
+const [searchQuery, setSearchQuery] = useState('');
+const [page, setPage] = useState(1);
+const [totalPages, setTotalPages] = useState(1);
+const [stats, setStats] = useState({ totalSent: 0, totalReceived: 0, pending: 0, fees: 0 });
+
+useEffect(() => {
+  loadTransactions();
+}, [currentFilter, page]);
+
+const loadTransactions = async () => {
+  setLoading(true);
+  try {
+    const filters: any = {};
+    if (currentFilter !== 'all') {
+      filters.type = currentFilter;
+    }
+
+    const response = await transactionApi.getTransactions(page, 10, filters);
+    setTransactions(response.data.data.transactions);
+    setTotalPages(response.data.data.totalPages);
+    
+    // Calcul des statistiques
+    const sent = response.data.data.transactions
+      .filter(t => t.direction === 'sent' && t.status === 'completed')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const received = response.data.data.transactions
+      .filter(t => t.direction === 'received' && t.status === 'completed')
+      .reduce((sum, t) => sum + t.receivedAmount, 0);
+    const pending = response.data.data.transactions
+      .filter(t => t.status === 'pending')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const fees = response.data.data.transactions.reduce((sum, t) => sum + t.fees, 0);
+
+    setStats({ totalSent: sent, totalReceived: received, pending, fees });
+  } catch (error) {
+    console.error('Error loading transactions:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Filtrage côté client pour la recherche
+const filteredTransactions = transactions.filter(t => 
+  searchQuery === '' || 
+  t.counterpartyName?.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
+
+
+BACKEND (app/api/transactions/route.ts)
+Endpoint GET /api/transactions
+Logique serveur
+
+export async function GET(request: NextRequest) {
+  // 1. Vérification de l'authentification
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  // 2. Récupération des paramètres de requête
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const type = searchParams.get('type'); // 'sent', 'received', ou null
+  const offset = (page - 1) * limit;
+  
+  // 3. Construction de la clause WHERE dynamique
+  const where: any = {};
+  
+  if (type === 'sent') {
+    where.senderId = decoded.id;
+  } else if (type === 'received') {
+    where.receiverId = decoded.id;
+  } else {
+    where.OR = [{ senderId: decoded.id }, { receiverId: decoded.id }];
+  }
+  
+  // 4. Exécution des requêtes en parallèle
+  const [transactions, total] = await Promise.all([
+    prisma.transaction.findMany({
+      where,
+      include: {
+        sender: { select: { firstName: true, lastName: true, userCode: true } },
+        receiver: { select: { firstName: true, lastName: true, userCode: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limit,
+    }),
+    prisma.transaction.count({ where }),
+  ]);
+  
+  // 5. Formatage des données
+  const data = transactions.map((t) => {
+    const isSender = t.senderId === decoded.id;
+    return {
+      ...t,
+      direction: isSender ? 'sent' : 'received',
+      counterpartyName: isSender
+        ? `${t.receiver.firstName} ${t.receiver.lastName}`
+        : `${t.sender.firstName} ${t.sender.lastName}`,
+      counterpartyCode: isSender ? t.receiver.userCode : t.sender.userCode,
+      createdAt: t.createdAt.toISOString(),
+      completedAt: t.completedAt?.toISOString(),
+    };
+  });
+  
+  // 6. Retour de la réponse paginée
+  return NextResponse.json({
+    success: true,
+    data: { 
+      transactions: data, 
+      total, 
+      page, 
+      totalPages: Math.ceil(total / limit) 
+    },
+  });
+}
+
+
+
+🗄️ BASE DE DONNÉES
+Table Transaction
+
+
+model Transaction {
+  id               String   @id @default(cuid())
+  senderId         String
+  receiverId       String
+  amount           Float
+  currency         String
+  receivedAmount   Float
+  receivedCurrency String
+  exchangeRate     Float
+  fees             Float    @default(0)
+  status           String   @default("completed")
+  type             String   @default("send")
+  description      String?
+  createdAt        DateTime @default(now())
+  completedAt      DateTime?
+  
+  sender   User @relation("Sender", fields: [senderId], references: [id])
+  receiver User @relation("Receiver", fields: [receiverId], references: [id])
+}
+
+
+Requêtes exécutées
+1. Récupérer les transactions (page 1, limit 10)
+
+SELECT t.*, 
+       s.first_name as sender_first_name, 
+       s.last_name as sender_last_name,
+       s.user_code as sender_user_code,
+       r.first_name as receiver_first_name, 
+       r.last_name as receiver_last_name,
+       r.user_code as receiver_user_code
+FROM transactions t
+JOIN users s ON t.sender_id = s.id
+JOIN users r ON t.receiver_id = r.id
+WHERE t.sender_id = 'user_id' OR t.receiver_id = 'user_id'
+ORDER BY t.created_at DESC
+LIMIT 10 OFFSET 0
+
+
+2. Compter le total des transactions
+
+SELECT COUNT(*) FROM transactions
+WHERE sender_id = 'user_id' OR receiver_id = 'user_id'
+
+
+3. Filtrer par type (envois uniquement)
+sql
+
+SELECT ... FROM transactions
+WHERE sender_id = 'user_id'
+ORDER BY created_at DESC
+LIMIT 10 OFFSET 0
+
+
+4. Filtrer par type (réceptions uniquement)
+
+SELECT ... FROM transactions
+WHERE receiver_id = 'user_id'
+ORDER BY created_at DESC
+LIMIT 10 OFFSET 0
+
+Index utilisés
+
+CREATE INDEX idx_transactions_sender ON transactions(sender_id);
+CREATE INDEX idx_transactions_receiver ON transactions(receiver_id);
+CREATE INDEX idx_transactions_created ON transactions(created_at DESC);
+
+
+
+🔄 FLUX DE DONNÉES
+
+┌──────────────┐
+│   History    │  Composant React
+│   (Frontend) │
+└──────┬───────┘
+       │
+       │ useEffect(() => { loadTransactions(); }, [currentFilter, page])
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  transactionApi.getTransactions(     │
+│    page,                             │
+│    10,                               │
+│    { type: currentFilter }           │
+│  )                                   │
+──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  GET /api/transactions               │
+│  ?page=1&limit=10&type=sent          │
+└──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Backend (Next.js API Routes)        │
+│  - Vérification token JWT            │
+│  - Construction clause WHERE         │
+│  - Requêtes Prisma parallèles        │
+│  - Formatage des données             │
+──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Base de données (SQLite)            │
+│  - Table transactions                │
+│  - Table users (JOIN)                │
+│  - Index sur sender_id, receiver_id  │
+└──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Réponse JSON                        │
+│  {                                   │
+│    transactions: [...],              │
+│    total: 36,                        │
+│    page: 1,                          │
+│    totalPages: 4                     │
+│  }                                   │
+└──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Mise à jour du state React          │
+│  setTransactions(...)                │
+│  setTotalPages(...)                  │
+│  setStats(...)                       │
+──────┬───────────────────────────────
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Rendu UI                            │
+│  - Affichage des cartes de stats     │
+│  - Affichage du tableau              │
+│  - Affichage de la pagination        │
+└──────────────────────────────────────┘
+
+
+
+
+📊 DONNÉES AFFICHÉES
+Statistiques (calculées côté frontend)
+Total envoyé : Somme des montants des transactions envoyées complétées
+Total reçu : Somme des montants reçus des transactions reçues complétées
+En attente : Somme des montants des transactions en attente
+Frais payés : Somme de tous les frais de transaction
+Pour chaque transaction
+Type : ENVOI (✈️ vert) ou REÇU (📥 bleu)
+Correspondant : Nom + code utilisateur
+Montant envoyé : amount + currency
+Montant reçu : receivedAmount + receivedCurrency
+Date : Date + heure (format français)
+Statut : COMPLÉTÉ (vert), EN ATTENTE (orange), ANNULÉ (rouge)
+Filtres disponibles
+Tous : Toutes les transactions (envois + réceptions)
+Envois : Uniquement les transactions où l'utilisateur est l'expéditeur
+Reçus : Uniquement les transactions où l'utilisateur est le destinataire
+Pagination
+10 transactions par page
+Navigation : Précédent, pages 1-5, Suivant
+Affichage : "Page X sur Y · Z transactions au total"
+
+
+
+✅ FONCTIONNALITÉS
+Affichage des statistiques (envoyé, reçu, en attente, frais)
+Recherche par nom de correspondant
+Filtres par type (Tous, Envois, Reçus)
+Tableau complet avec toutes les informations
+Pagination (10 transactions par page)
+Tri par date décroissante (plus récentes en premier)
+Codes couleur selon le statut
+Icônes distinctes pour envois et réceptions
+Affichage de la date et l'heure
+Design responsive et fidèle au SVG
+État de chargement avec spinner
+🐛 GESTION DES ERREURS
+Erreurs possibles
+Token expiré → Redirection vers /login
+Erreur API → Console error + affichage vide
+Aucune transaction → Message "Aucune transaction trouvée"
+Filtre invalide → Affichage de toutes les transactions
+
+
+
+État de chargement
+
+{loading ? (
+  <div className="p-12 text-center text-[#888]">Chargement...</div>
+) : filteredTransactions.length === 0 ? (
+  <div className="p-12 text-center text-[#888]">Aucune transaction trouvée</div>
+) : (
+  // Affichage des transactions
+)}
+
+
+
+Recherche côté client
+
+const filteredTransactions = transactions.filter(t => 
+  searchQuery === '' || 
+  t.counterpartyName?.toLowerCase().includes(searchQuery.toLowerCase())
+);
+
+
+

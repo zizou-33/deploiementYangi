@@ -1,0 +1,399 @@
+# PAGE DASHBOARD - Tableau de bord
+
+## 📄 FRONTEND (app/dashboard/page.tsx)
+
+### Structure
+- Page AVEC sidebar et topbar
+- Layout principal avec PageWrapper
+- Multiple sections : Balance, Stats, Actions rapides, Transactions récentes, Bénéficiaires, Taux de change
+
+### Composants clés
+
+#### 1. Carte de solde (grande carte sombre)
+```typescript
+<div className="col-span-5 bg-gradient-to-br from-[#1A1A2E] via-[#2D1B4E] to-[#1A1A2E] rounded-3xl p-8 text-white">
+  <p className="text-[#9999BB] text-[11px] tracking-[2px] mb-4">SOLDE TOTAL DU COMPTE</p>
+  <h2 className="text-[36px] font-bold mb-2">{user?.balance.toLocaleString()}</h2>
+  <p className="text-[#E8C878] text-lg">{user?.currency}</p>
+  <p className="text-[#4CAF50] text-sm">▲ +2.4% ce mois</p>
+  
+  <div className="flex items-center justify-between mt-6">
+    <div className="bg-white/8 rounded-lg px-4 py-2">
+      <p className="text-[#9999BB] text-[11px]">Code: {user?.userCode}</p>
+    </div>
+    <Link href="/transfer" className="bg-gradient-to-r from-[#C9A84C] to-[#E8C878] text-[#1A1A2E] px-6 py-2.5 rounded-xl font-bold">
+      + Envoyer
+    </Link>
+  </div>
+</div>
+
+
+2. Cartes de statistiques (4 petites cartes)
+Envoyé ce mois : Nombre de transferts envoyés
+Reçu ce mois : Nombre de transferts reçus
+Transactions : Total des transactions
+Bénéficiaires : Nombre de bénéficiaires enregistrés
+3. Actions rapides (4 boutons)
+Envoyer (lien vers /transfer)
+Convertir (lien vers /exchange-rates)
+Ajouter bénéf. (lien vers /beneficiaries)
+Historique (lien vers /history)
+4. Dernières transactions (liste)
+
+{recentTransactions.map((transaction) => (
+  <div key={transaction.id} className="flex items-center justify-between">
+    <div className="flex items-center gap-4">
+      <div className={`w-10 h-10 rounded-full ${
+        transaction.direction === 'sent' ? 'bg-[#E8F5E9]' : 'bg-[#E3F2FD]'
+      }`}>
+        {transaction.direction === 'sent' ? '✈️' : ''}
+      </div>
+      <div>
+        <p className="font-bold text-[#1A1A2E]">
+          {transaction.direction === 'sent' ? 'Envoi à' : 'Reçu de'} {transaction.counterpartyName}
+        </p>
+        <p className="text-xs text-[#888]">{new Date(transaction.createdAt).toLocaleDateString('fr-FR')}</p>
+      </div>
+    </div>
+    <div className="text-right">
+      <p className={`font-bold ${
+        transaction.direction === 'sent' ? 'text-[#E53935]' : 'text-[#4CAF50]'
+      }`}>
+        {transaction.direction === 'sent' ? '-' : '+'} {transaction.amount.toLocaleString()} {transaction.currency}
+      </p>
+      <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-bold ${
+        transaction.status === 'completed' ? 'bg-[#E8F5E9] text-[#4CAF50]' : 'bg-[#FFF3E0] text-[#FF9800]'
+      }`}>
+        {transaction.status === 'completed' ? 'COMPLÉTÉ' : 'EN ATTENTE'}
+      </span>
+    </div>
+  </div>
+))}
+
+
+
+Bénéficiaires fréquents (liste)
+{beneficiaries.slice(0, 3).map((beneficiary) => (
+  <div key={beneficiary.id} className="flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <div className="w-11 h-11 rounded-full bg-[#E8C878]/30 flex items-center justify-center text-[#C9A84C] font-bold">
+        {beneficiary.firstName.charAt(0)}{beneficiary.lastName.charAt(0)}
+      </div>
+      <div>
+        <p className="font-bold text-[#1A1A2E]">{beneficiary.firstName} {beneficiary.lastName}</p>
+        <p className="text-xs text-[#888]">{beneficiary.country} · {beneficiary.currency}</p>
+      </div>
+    </div>
+    <Link href={`/transfer?beneficiary=${beneficiary.id}`} className="bg-[#1A1A2E] text-[#E8C878] px-4 py-1.5 rounded-lg text-xs font-bold">
+      Envoyer
+    </Link>
+  </div>
+))}
+
+
+Logique React
+
+const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  loadData();
+}, []);
+
+const loadData = async () => {
+  try {
+    const [transRes, benRes] = await Promise.all([
+      transactionApi.getTransactions(1, 5),
+      beneficiaryApi.getBeneficiaries(),
+    ]);
+    setRecentTransactions(transRes.data.data.transactions);
+    setBeneficiaries(benRes.data.data.filter((b: Beneficiary) => b.status === 'accepted'));
+  } catch (error) {
+    console.error('Error loading data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+🔧 BACKEND
+Endpoint 1 : GET /api/transactions
+
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '10');
+  const offset = (page - 1) * limit;
+  
+  const where = {
+    OR: [{ senderId: decoded.id }, { receiverId: decoded.id }],
+  };
+  
+  const [transactions, total] = await Promise.all([
+    prisma.transaction.findMany({
+      where,
+      include: {
+        sender: { select: { firstName: true, lastName: true, userCode: true } },
+        receiver: { select: { firstName: true, lastName: true, userCode: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: offset,
+      take: limit,
+    }),
+    prisma.transaction.count({ where }),
+  ]);
+  
+  const data = transactions.map((t) => {
+    const isSender = t.senderId === decoded.id;
+    return {
+      ...t,
+      direction: isSender ? 'sent' : 'received',
+      counterpartyName: isSender
+        ? `${t.receiver.firstName} ${t.receiver.lastName}`
+        : `${t.sender.firstName} ${t.sender.lastName}`,
+      counterpartyCode: isSender ? t.receiver.userCode : t.sender.userCode,
+      createdAt: t.createdAt.toISOString(),
+    };
+  });
+  
+  return NextResponse.json({
+    success: true,
+    data: { transactions: data, total, page, totalPages: Math.ceil(total / limit) },
+  });
+}
+
+
+
+Endpoint 2 : GET /api/beneficiaries
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const beneficiaries = await prisma.beneficiary.findMany({
+    where: { userId: decoded.id },
+    include: {
+      beneficiary: {
+        select: {
+          firstName: true, lastName: true, email: true,
+          country: true, currency: true, userCode: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  
+  const data = beneficiaries.map((b) => ({
+    ...b,
+    firstName: b.beneficiary.firstName,
+    lastName: b.beneficiary.lastName,
+    email: b.beneficiary.email,
+    country: b.beneficiary.country,
+    currency: b.beneficiary.currency,
+    userCode: b.beneficiary.userCode,
+  }));
+  
+  return NextResponse.json({ success: true, data });
+}
+
+
+
+🗄️ BASE DE DONNÉES
+Tables utilisées
+Transaction
+
+model Transaction {
+  id               String   @id @default(cuid())
+  senderId         String
+  receiverId       String
+  amount           Float
+  currency         String
+  receivedAmount   Float
+  receivedCurrency String
+  exchangeRate     Float
+  fees             Float    @default(0)
+  status           String   @default("completed")
+  type             String   @default("send")
+  description      String?
+  createdAt        DateTime @default(now())
+  completedAt      DateTime?
+  
+  sender   User @relation("Sender", fields: [senderId], references: [id])
+  receiver User @relation("Receiver", fields: [receiverId], references: [id])
+}
+
+
+Beneficiary
+model Beneficiary {
+  id            String   @id @default(cuid())
+  userId        String
+  beneficiaryId String
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user        User @relation("UserBeneficiaries", fields: [userId], references: [id], onDelete: Cascade)
+  beneficiary User @relation("AddedByUsers", fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, beneficiaryId])
+}
+
+Requêtes exécutées
+1. Récupérer les 5 dernières transactions
+SELECT * FROM transactions
+WHERE sender_id = 'user_id' OR receiver_id = 'user_id'
+ORDER BY created_at DESC
+LIMIT 5
+
+
+2. Récupérer les bénéficiaires acceptés
+SELECT b.*, u.first_name, u.last_name, u.email, u.country, u.currency, u.user_code
+FROM beneficiaries b
+JOIN users u ON b.beneficiary_id = u.id
+WHERE b.user_id = 'user_id' AND b.status = 'accepted'
+ORDER BY b.created_at DESC
+
+
+🔄 FLUX DE DONNÉES
+┌──────────────┐
+│   Dashboard  │  Composant React
+│   (Frontend) │
+└──────┬───────
+       │
+       │ useEffect(() => { loadData(); }, [])
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Promise.all([                       │
+│    transactionApi.getTransactions(), │
+│    beneficiaryApi.getBeneficiaries() │
+│  ])                                  │
+└──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  GET /api/transactions?page=1&limit=5│
+│  GET /api/beneficiaries              │
+──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Backend (Next.js API Routes)        │
+│  - Vérification token JWT            │
+│  - Requêtes Prisma                   │
+│  - Formatage des données             │
+└──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Base de données (SQLite)            │
+│  - Table transactions                │
+│  - Table beneficiaries               │
+│  - Table users (JOIN)                │
+└──────┬───────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Réponse JSON                        │
+│  { transactions: [...],              │
+│    beneficiaries: [...] }            │
+└──────┬───────────────────────────────┘
+       │
+       ▼
+──────────────────────────────────────┐
+│  Mise à jour du state React          │
+│  setRecentTransactions(...)          │
+│  setBeneficiaries(...)               │
+──────────────────────────────────────┘
+       │
+       ▼
+┌──────────────────────────────────────┐
+│  Rendu UI                            │
+│  - Affichage des transactions        │
+│  - Affichage des bénéficiaires       │
+│  - Mise à jour des statistiques      │
+└──────────────────────────────────────┘
+
+
+📊 DONNÉES AFFICHÉES
+Statistiques utilisateur
+Solde total : user.balance (ex: 327 980 XAF)
+Devise : user.currency (ex: XAF)
+Code unique : user.userCode (ex: DM7X9K2)
+Envoyé ce mois : user.sentCount (nombre de transferts)
+Reçu ce mois : user.receivedCount (nombre de transferts)
+Total transactions : sentCount + receivedCount
+Bénéficiaires : beneficiaries.length (filtrés par status='accepted')
+
+
+Transactions récentes
+Pour chaque transaction :
+Direction : 'sent' ou 'received'
+Nom du correspondant : counterpartyName
+Montant : amount + currency
+Date : createdAt (formatée en français)
+Statut : 'completed', 'pending', 'cancelled'
+Bénéficiaires fréquents
+Pour chaque bénéficiaire :
+Initiales : firstName.charAt(0) + lastName.charAt(0)
+Nom complet : firstName + lastName
+Pays et devise : country + currency
+Lien : /transfer?beneficiary={id}
+
+
+
+✅ FONCTIONNALITÉS
+Affichage du solde en temps réel
+Statistiques de transactions (envoyés, reçus, total)
+Liste des 5 dernières transactions
+Liste des 3 bénéficiaires fréquents
+Taux de change en direct (EUR, USD, GBP)
+Actions rapides (4 boutons avec liens)
+Indicateur de progression (+2.4% ce mois)
+Code utilisateur unique affiché
+Design responsive et fidèle au SVG
+Chargement avec spinner
+🐛 GESTION DES ERREURS
+Erreurs possibles
+Token expiré → Redirection vers /login
+Erreur API → Console error + affichage vide
+Aucune transaction → Message "Aucune transaction récente"
+Aucun bénéficiaire → Message "Aucun bénéficiaire"
+
+
+État de chargement
+
+if (loading) {
+  return (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#C9A84C]"></div>
+    </div>
+  );
+}
+
+PERFORMANCES
+Optimisations
+Promise.all : Chargement parallèle des transactions et bénéficiaires
+Limit 5 : Seulement 5 transactions chargées (pas toutes)
+Filter côté serveur : Bénéficiaires filtrés par status='accepted'
+useState : State local pour éviter les re-renders inutiles
+Requêtes SQL optimisées
+
+-- Utilisation d'index sur sender_id et receiver_id
+CREATE INDEX idx_transactions_sender ON transactions(sender_id);
+CREATE INDEX idx_transactions_receiver ON transactions(receiver_id);
+
+-- Jointure efficace avec les users
+SELECT ... FROM beneficiaries b
+JOIN users u ON b.beneficiary_id = u.id
+WHERE b.user_id = ? AND b.status = 'accepted'
+
+
+

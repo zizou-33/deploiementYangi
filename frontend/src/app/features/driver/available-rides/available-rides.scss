@@ -1,0 +1,132 @@
+.available-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  font-size: 0.88rem;
+  color: var(--gray-light);
+}
+
+.rides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.ride-card {
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: var(--transition);
+
+  &.available:hover { border-color: rgba(227,30,36,0.3); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(227,30,36,0.1); }
+  &-header { display: flex; align-items: center; justify-content: space-between;
+    .ride-id { font-size: 0.82rem; font-weight: 700; color: var(--gray); text-transform: uppercase; }
+  }
+  &-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--border);
+    .ride-price { font-size: 1.05rem; font-weight: 700; color: var(--white); }
+  }
+}
+
+.ride-route { display: flex; flex-direction: column; }
+.route-point { display: flex; align-items: center; gap: 12px;
+  .point-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; &.green { background: var(--success); } &.red { background: var(--primary); } }
+  .point-info { display: flex; flex-direction: column; gap: 2px;
+    .point-label { font-size: 0.72rem; color: var(--gray); text-transform: uppercase; font-weight: 600; }
+    .point-addr { font-size: 0.88rem; color: var(--white); font-weight: 500; }
+  }
+}
+.route-connector { width: 2px; height: 16px; background: var(--border); margin: 4px 0 4px 5px; }
+.ride-card-meta { display: flex; flex-wrap: wrap; gap: 12px;
+  .meta-item { display: flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--gray-light); i { color: var(--gray); } }
+}
+
+// Course active
+.active-ride-card {
+  background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.03));
+  border: 1px solid rgba(34,197,94,0.3);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 28px;
+}
+
+.arc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+
+  .arc-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--white);
+  }
+
+  .arc-pulse {
+    width: 12px;
+    height: 12px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+}
+
+.arc-route {
+  background: var(--dark-2);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.arc-point {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--white);
+  font-weight: 500;
+  .point-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; &.green { background: var(--success); } &.red { background: var(--primary); } }
+}
+
+.arc-arrow { padding-left: 4px; color: var(--gray); font-size: 0.75rem; }
+
+.arc-price {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--success);
+  margin-bottom: 16px;
+}
+
+.arc-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  color: #93c5fd;
+  i { flex-shrink: 0; }
+}

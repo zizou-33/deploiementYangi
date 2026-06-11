@@ -1,0 +1,671 @@
+# PAGE BENEFICIARIES - Gestion des bénéficiaires
+
+## 📄 FRONTEND (app/beneficiaries/page.tsx)
+
+### Structure
+- Page AVEC sidebar et topbar
+- Layout : Bouton ajouter + Filtres + Grille de cartes de bénéficiaires
+- Modal d'ajout de bénéficiaire avec code utilisateur
+
+### Composants clés
+
+#### 1. Bouton Ajouter
+```typescript
+<div className="flex justify-end mb-6">
+  <button
+    onClick={() => setShowAddModal(true)}
+    className="bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border border-[#C9A84C] text-[#E8C878] px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition"
+  >
+    + Ajouter
+  </button>
+</div>
+
+
+
+2. Barre de recherche et filtres
+
+
+<div className="bg-white rounded-2xl p-4 shadow-sm mb-6 flex items-center justify-between">
+  <input
+    type="text"
+    placeholder="🔍  Rechercher un bénéficiaire..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="pl-4 pr-4 py-2 bg-[#F5F3EE] border border-[#E0D9CC] rounded-lg outline-none focus:border-[#C9A84C] text-sm w-72"
+  />
+  <div className="flex items-center gap-2">
+    <span className="text-sm text-[#888]">Pays :</span>
+    {['all', 'europe', 'afrique', 'ameriques', 'asie'].map((region) => (
+      <button
+        key={region}
+        onClick={() => setFilterCountry(region)}
+        className={`px-4 py-1.5 rounded-lg text-xs font-bold ${
+          filterCountry === region
+            ? 'bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-[#E8C878]'
+            : 'bg-[#F5F3EE] text-[#888]'
+        }`}
+      >
+        {region === 'all' ? 'Tous' : region.charAt(0).toUpperCase() + region.slice(1)}
+      </button>
+    ))}
+  </div>
+  <span className="text-sm text-[#888]">{filteredBeneficiaries.length} bénéficiaires</span>
+</div>
+
+
+
+3. Section des demandes en attente
+
+
+{pendingRequests.length > 0 && (
+  <div className="bg-white rounded-3xl p-6 shadow-sm mb-6">
+    <h3 className="text-lg font-bold text-[#1A1A2E] mb-4">Demandes en attente</h3>
+    <div className="space-y-4">
+      {pendingRequests.map((request) => (
+        <div key={request.id} className="flex items-center justify-between p-4 bg-[#FFFBF0] rounded-xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-[#C9A84C]/30 flex items-center justify-center text-[#C9A84C] font-bold">
+              {request.firstName.charAt(0)}{request.lastName.charAt(0)}
+            </div>
+            <div>
+              <p className="font-bold text-[#1A1A2E]">{request.firstName} {request.lastName}</p>
+              <p className="text-sm text-[#888]">{request.email}</p>
+              <p className="text-xs text-[#C9A84C]">Code: {request.userCode}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleRespond(request.id, 'accepted')}
+              className="px-4 py-2 bg-[#4CAF50] text-white rounded-lg text-sm font-bold hover:bg-[#45a049] transition"
+            >
+              Accepter
+            </button>
+            <button
+              onClick={() => handleRespond(request.id, 'declined')}
+              className="px-4 py-2 bg-[#E53935] text-white rounded-lg text-sm font-bold hover:bg-[#d32f2f] transition"
+            >
+              Refuser
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+
+
+4. Grille de cartes de bénéficiaires
+
+
+<div className="grid grid-cols-3 gap-6">
+  {filteredBeneficiaries.map((beneficiary) => (
+    <div key={beneficiary.id} className="bg-white rounded-3xl p-6 shadow-sm hover:shadow-md transition">
+      <div className="flex items-start justify-between mb-4">
+        <div className="w-16 h-16 rounded-full bg-[#1A1A2E] flex items-center justify-center text-[#E8C878] font-bold text-xl">
+          {beneficiary.firstName.charAt(0)}{beneficiary.lastName.charAt(0)}
+        </div>
+      </div>
+      <h3 className="text-lg font-bold text-[#1A1A2E] mb-1">{beneficiary.firstName} {beneficiary.lastName}</h3>
+      <p className="text-sm text-[#888] mb-2">🇫🇷 {beneficiary.country}</p>
+      <p className="text-xs text-[#C9A84C] mb-4">{beneficiary.currency} · {beneficiary.userCode}</p>
+      <button className="w-full bg-gradient-to-br from-[#1A1A2E] to-[#16213E] text-[#E8C878] py-2.5 rounded-xl text-sm font-bold hover:opacity-90 transition">
+        Envoyer
+      </button>
+    </div>
+  ))}
+
+  {/* Carte Ajouter un bénéficiaire */}
+  <button
+    onClick={() => setShowAddModal(true)}
+    className="bg-[#F8F7F4] border-2 border-dashed border-[#E8C878] rounded-3xl p-6 flex flex-col items-center justify-center hover:bg-[#F5F3EE] transition"
+  >
+    <div className="text-4xl text-[#C9A84C] mb-2">+</div>
+    <p className="text-sm font-bold text-[#C9A84C]">Ajouter un bénéficiaire</p>
+    <p className="text-xs text-[#888]">Nouveau contact de transfert</p>
+  </button>
+</div>
+
+
+
+
+5. Modal d'ajout de bénéficiaire
+
+
+{showAddModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-3xl p-8 max-w-md w-full">
+      <h2 className="text-2xl font-bold mb-6 text-[#1A1A2E]">Ajouter un bénéficiaire</h2>
+      <form onSubmit={handleAddBeneficiary}>
+        <div className="mb-6">
+          <label className="block text-xs font-bold text-[#666] tracking-wider mb-2">CODE DE L'UTILISATEUR</label>
+          <input
+            type="text"
+            value={userCode}
+            onChange={(e) => setUserCode(e.target.value.toUpperCase())}
+            className="w-full px-4 py-3 bg-[#F8F7F4] border border-[#E0D9CC] rounded-xl focus:outline-none focus:border-[#C9A84C] text-sm uppercase"
+            placeholder="DMXXXXXX"
+            required
+            maxLength={8}
+          />
+        </div>
+        <div className="flex gap-4">
+          <button
+            type="button"
+            onClick={() => setShowAddModal(false)}
+            className="flex-1 py-3 bg-[#F5F3EE] border border-[#E0D9CC] rounded-xl font-semibold text-[#666] hover:bg-[#EDE9DF] transition"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 py-3 bg-gradient-to-br from-[#1A1A2E] to-[#16213E] border border-[#C9A84C] text-[#E8C878] font-bold rounded-xl hover:opacity-90 transition disabled:opacity-50"
+          >
+            {loading ? 'Envoi...' : 'Envoyer la demande'}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
+
+
+
+
+Logique React
+
+
+const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
+const [pendingRequests, setPendingRequests] = useState<Beneficiary[]>([]);
+const [showAddModal, setShowAddModal] = useState(false);
+const [userCode, setUserCode] = useState('');
+const [loading, setLoading] = useState(false);
+const [searchQuery, setSearchQuery] = useState('');
+const [filterCountry, setFilterCountry] = useState('all');
+
+useEffect(() => {
+  loadData();
+}, []);
+
+const loadData = async () => {
+  try {
+    const [benRes, reqRes] = await Promise.all([
+      beneficiaryApi.getBeneficiaries(),
+      beneficiaryApi.getPendingRequests(),
+    ]);
+    setBeneficiaries(benRes.data.data);
+    setPendingRequests(reqRes.data.data);
+  } catch (error) {
+    console.error('Error loading data:', error);
+  }
+};
+
+const handleAddBeneficiary = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    await beneficiaryApi.addBeneficiary(userCode.toUpperCase());
+    toast.success('Demande envoyée!');
+    setUserCode('');
+    setShowAddModal(false);
+    await loadData();
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } };
+    toast.error(err.response?.data?.error || 'Erreur');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleRespond = async (id: string, status: 'accepted' | 'declined') => {
+  try {
+    await beneficiaryApi.respondToRequest(id, status);
+    toast.success(`Demande ${status === 'accepted' ? 'acceptée' : 'refusée'}`);
+    await loadData();
+  } catch (error) {
+    toast.error('Erreur');
+  }
+};
+
+// Filtrage côté client
+const filteredBeneficiaries = beneficiaries.filter(b => {
+  const matchesSearch = b.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       b.lastName.toLowerCase().includes(searchQuery.toLowerCase());
+  const matchesCountry = filterCountry === 'all' || b.country.toLowerCase().includes(filterCountry.toLowerCase());
+  return matchesSearch && matchesCountry;
+});
+
+
+
+🔧 BACKEND
+Endpoint 1 : GET /api/beneficiaries
+
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const beneficiaries = await prisma.beneficiary.findMany({
+    where: { userId: decoded.id },
+    include: {
+      beneficiary: {
+        select: {
+          firstName: true, lastName: true, email: true,
+          country: true, currency: true, userCode: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  
+  const data = beneficiaries.map((b) => ({
+    ...b,
+    firstName: b.beneficiary.firstName,
+    lastName: b.beneficiary.lastName,
+    email: b.beneficiary.email,
+    country: b.beneficiary.country,
+    currency: b.beneficiary.currency,
+    userCode: b.beneficiary.userCode,
+  }));
+  
+  return NextResponse.json({ success: true, data });
+}
+
+
+
+Endpoint 2 : GET /api/beneficiaries/requests
+
+
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const requests = await prisma.beneficiary.findMany({
+    where: { beneficiaryId: decoded.id, status: 'pending' },
+    include: {
+      user: {
+        select: {
+          firstName: true, lastName: true, email: true,
+          country: true, currency: true, userCode: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  
+  const data = requests.map((r) => ({
+    ...r,
+    firstName: r.user.firstName,
+    lastName: r.user.lastName,
+    email: r.user.email,
+    country: r.user.country,
+    currency: r.user.currency,
+    userCode: r.user.userCode,
+  }));
+  
+  return NextResponse.json({ success: true, data });
+}
+
+
+Endpoint 3 : POST /api/beneficiaries
+
+
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const { userCode } = await request.json();
+  
+  // 1. Chercher l'utilisateur par son code
+  const beneficiary = await prisma.user.findUnique({ where: { userCode } });
+  if (!beneficiary) {
+    return NextResponse.json({ error: 'Utilisateur non trouvé avec ce code' }, { status: 404 });
+  }
+  
+  // 2. Vérifier qu'on ne s'ajoute pas soi-même
+  if (beneficiary.id === decoded.id) {
+    return NextResponse.json({ error: 'Vous ne pouvez pas vous ajouter vous-même' }, { status: 400 });
+  }
+  
+  // 3. Vérifier si le bénéficiaire existe déjà
+  const existing = await prisma.beneficiary.findUnique({
+    where: { userId_beneficiaryId: { userId: decoded.id, beneficiaryId: beneficiary.id } },
+  });
+  
+  if (existing) {
+    return NextResponse.json({ error: 'Ce bénéficiaire est déjà dans votre liste' }, { status: 400 });
+  }
+  
+  // 4. Créer la demande de bénéficiaire
+  await prisma.beneficiary.create({
+    data: { userId: decoded.id, beneficiaryId: beneficiary.id, status: 'pending' },
+  });
+  
+  // 5. Créer une notification pour le destinataire
+  await prisma.notification.create({
+    data: {
+      userId: beneficiary.id,
+      type: 'beneficiary_request',
+      message: `${decoded.id} souhaite vous ajouter comme bénéficiaire`,
+    },
+  });
+  
+  return NextResponse.json({ success: true, message: 'Demande envoyée' });
+}
+
+
+
+
+Endpoint 4 : PUT /api/beneficiaries/[id]/respond
+
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const { status } = await request.json(); // 'accepted' ou 'declined'
+  
+  const beneficiary = await prisma.beneficiary.findUnique({
+    where: { id: params.id },
+  });
+  
+  if (!beneficiary || beneficiary.beneficiaryId !== decoded.id) {
+    return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+  }
+  
+  // Mettre à jour le statut
+  await prisma.beneficiary.update({
+    where: { id: params.id },
+    data: { status, updatedAt: new Date() },
+  });
+  
+  // Récupérer les infos du demandeur
+  const requester = await prisma.user.findUnique({
+    where: { id: beneficiary.userId },
+    select: { firstName: true, lastName: true },
+  });
+  
+  // Créer une notification pour le demandeur
+  await prisma.notification.create({
+    data: {
+      userId: beneficiary.userId,
+      type: 'beneficiary_response',
+      message: `${requester?.firstName} ${requester?.lastName} a ${status === 'accepted' ? 'accepté' : 'refusé'} votre demande`,
+    },
+  });
+  
+  return NextResponse.json({ success: true, message: `Request ${status}` });
+}
+
+
+
+
+🗄️ BASE DE DONNÉES
+Table Beneficiary
+
+model Beneficiary {
+  id            String   @id @default(cuid())
+  userId        String
+  beneficiaryId String
+  status        String   @default("pending")  // 'pending', 'accepted', 'declined'
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user        User @relation("UserBeneficiaries", fields: [userId], references: [id], onDelete: Cascade)
+  beneficiary User @relation("AddedByUsers", fields: [beneficiaryId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, beneficiaryId])  // Un seul bénéficiaire par paire
+}
+
+
+Table Notification
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // 'beneficiary_request', 'beneficiary_response', 'transfer_sent', 'transfer_received'
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+
+Requêtes exécutées
+1. Récupérer mes bénéficiaires
+
+
+SELECT b.*, u.first_name, u.last_name, u.email, u.country, u.currency, u.user_code
+FROM beneficiaries b
+JOIN users u ON b.beneficiary_id = u.id
+WHERE b.user_id = 'user_id'
+ORDER BY b.created_at DESC
+
+
+2. Récupérer les demandes en attente
+
+SELECT b.*, u.first_name, u.last_name, u.email, u.country, u.currency, u.user_code
+FROM beneficiaries b
+JOIN users u ON b.user_id = u.id
+WHERE b.beneficiary_id = 'user_id' AND b.status = 'pending'
+ORDER BY b.created_at DESC
+
+
+3. Ajouter un bénéficiaire
+
+
+INSERT INTO beneficiaries (user_id, beneficiary_id, status)
+VALUES ('user_id', 'beneficiary_id', 'pending')
+ON CONFLICT (user_id, beneficiary_id) DO NOTHING
+
+
+4. Accepter/Refuser une demande
+
+
+UPDATE beneficiaries
+SET status = 'accepted', updated_at = NOW()
+WHERE id = 'beneficiary_id' AND beneficiary_id = 'user_id'
+
+
+
+5. Créer une notification
+
+INSERT INTO notifications (user_id, type, message, is_read, created_at)
+VALUES ('user_id', 'beneficiary_request', 'Message...', false, NOW())
+
+
+🔄 FLUX COMPLET D'AJOUT DE BÉNÉFICIAIRE
+
+┌──────────────────┐
+│  Utilisateur A   │  Clique sur "+ Ajouter"
+│                  │  Ouvre la modal
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Saisie du       │  Entre le code unique de l'utilisateur B
+│  code unique     │  (ex: DM7X9K2)
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  POST            │  Envoi du code au backend
+│  /api/           │
+│  beneficiaries   │
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Backend         │  - Recherche l'utilisateur par code
+│  validation      │  - Vérifie qu'il existe
+│                  │  - Vérifie que ce n'est pas soi-même
+│                  │  - Vérifie qu'il n'est pas déjà ajouté
+└─────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Création        │  - Crée une entrée dans beneficiaries
+│  en base         │    (status: 'pending')
+│                  │  - Crée une notification pour l'utilisateur B
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Utilisateur B   │  Reçoit une notification
+│  (destinataire)  │  "A souhaite vous ajouter comme bénéficiaire"
+────────┬─────────┘
+         │
+         ▼
+┌──────────────────
+│  Utilisateur B   │  Va sur la page Bénéficiaires
+│  voit la         │  Voit la demande dans "Demandes en attente"
+│  demande         │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Accepter ou     │  Clique sur "Accepter" ou "Refuser"
+│  Refuser         │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  PUT             │  Envoi de la réponse au backend
+│  /api/           │
+│  beneficiaries/  │
+│  [id]/respond    │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Backend         │  - Met à jour le statut (accepted/declined)
+│  mise à jour     │  - Crée une notification pour l'utilisateur A
+└─────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Utilisateur A   │  Reçoit une notification
+│  (demandeur)     │  "B a accepté votre demande"
+│                  │  Peut maintenant envoyer de l'argent à B
+──────────────────┘
+
+
+
+📊 DONNÉES ÉCHANGÉES
+Request POST /api/beneficiaries
+
+{
+  "userCode": "DM7X9K2"
+}
+
+
+Response POST /api/beneficiaries
+
+{
+  "success": true,
+  "message": "Demande envoyée"
+}
+
+
+
+Request PUT /api/beneficiaries/[id]/respond
+json
+
+{
+  "status": "accepted"
+}
+
+
+
+Response PUT /api/beneficiaries/[id]/respond
+{
+  "success": true,
+  "message": "Request accepted"
+}
+
+
+{
+  "success": true,
+  "message": "Request accepted"
+}
+
+
+{
+  "success": true,
+  "data": [
+    {
+      "id": "clx001...",
+      "userId": "clx123...",
+      "beneficiaryId": "clx789...",
+      "status": "accepted",
+      "firstName": "Marie",
+      "lastName": "Dupont",
+      "email": "marie@example.com",
+      "country": "France",
+      "currency": "EUR",
+      "userCode": "DM5K8L3",
+      "createdAt": "2025-01-10T10:00:00Z"
+    }
+  ]
+}
+
+
+
+✅ FONCTIONNALITÉS
+Affichage de la liste des bénéficiaires acceptés
+Affichage des demandes en attente
+Recherche par nom de bénéficiaire
+Filtrage par région (Europe, Afrique, Amériques, Asie)
+Ajout de bénéficiaire par code unique
+Acceptation/Refus de demandes
+Création de notifications automatiques
+Validation côté serveur (code unique, pas de doublon)
+Design responsive et fidèle au SVG
+État de chargement pendant les requêtes
+
+
+
+🔐 SÉCURITÉ
+Code utilisateur unique
+Généré aléatoirement lors de l'inscription (ex: DM7X9K2)
+Unique dans la base de données
+Utilisé pour identifier les utilisateurs sans exposer l'email
+Validation des demandes
+Impossible de s'ajouter soi-même
+Impossible d'ajouter un utilisateur qui n'existe pas
+Impossible d'ajouter un bénéficiaire déjà dans la liste
+Statut 'pending' jusqu'à acceptation
+Notifications
+Notification automatique lors de la création d'une demande
+Notification automatique lors de l'acceptation/refus
+Notifications stockées en base de données
+🐛 GESTION DES ERREURS
+Erreurs frontend
+Code vide → "Veuillez remplir tous les champs"
+Code invalide → "Utilisateur non trouvé avec ce code"
+Déjà ajouté → "Ce bénéficiaire est déjà dans votre liste"
+Erreurs backend
+Token invalide → 401 Unauthorized
+Code non trouvé → 404 Not Found
+Ajout de soi-même → 400 Bad Request
+Déjà dans la liste → 400 Bad Request
+Erreur serveur → 500 Internal Server Error
+
+
+
+États de chargement
+
+const [loading, setLoading] = useState(false);
+
+<button disabled={loading} className="disabled:opacity-50">
+  {loading ? 'Envoi...' : 'Envoyer la demande'}
+</button>
+
+
+

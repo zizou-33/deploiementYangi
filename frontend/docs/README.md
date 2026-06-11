@@ -1,0 +1,263 @@
+#  DoMoney - Application de Transfert d'Argent
+
+## 🎯 Présentation du Projet
+
+DoMoney est une application web de transfert d'argent international permettant aux utilisateurs d'envoyer et de recevoir de l'argent dans différentes devises. L'application propose une interface moderne et intuitive avec un système de bénéficiaires basé sur des codes uniques.
+
+## 🏗️ Architecture Technique
+
+### Frontend
+- **Framework** : Next.js 14 (App Router)
+- **Langage** : TypeScript (TSX)
+- **Styling** : Tailwind CSS
+- **State Management** : Zustand
+- **HTTP Client** : Axios
+- **Notifications** : React Hot Toast
+
+### Backend
+- **API Routes** : Next.js API Routes (Serverless)
+- **Base de données** : SQLite (via Prisma ORM)
+- **Authentification** : JWT (JSON Web Tokens)
+- **Hashage** : bcrypt (mots de passe)
+
+### Base de Données
+- **ORM** : Prisma
+- **Database** : SQLite (fichier local)
+- **Tables** : User, Beneficiary, Transaction, Notification
+
+## 📁 Structure du Projet
+domoney-app/
+├── app/
+│ ├── api/
+│ │ ├── auth/
+│ │ │ ├── login/route.ts # Connexion
+│ │ │ ├── register/route.ts # Inscription
+│ │ │ ├── me/route.ts # Profil utilisateur
+│ │ │ ├── profile/route.ts # Mise à jour profil
+│ │ │ └── password/route.ts # Changement mot de passe
+│ │ ├── beneficiaries/
+│ │ │ ├── route.ts # Liste + Ajout bénéficiaires
+│ │ │ ├── requests/route.ts # Demandes en attente
+│ │ │ └── [id]/respond/route.ts # Accepter/Refuser demande
+│ │ ├── transactions/
+│ │ │ └── route.ts # Liste + Création transactions
+│ │ ├── notifications/
+│ │ │ └── route.ts # Liste + Marquer comme lu
+│ │ └── exchange-rates/
+│ │ └── route.ts # Conversion de devises
+│ ├── login/page.tsx # Page de connexion
+│ ├── signup/page.tsx # Page d'inscription
+│ ├── dashboard/
+│ │ ── page.tsx # Tableau de bord
+│ ├── transfer/page.tsx # Envoyer de l'argent
+│ ├── history/page.tsx # Historique des transactions
+│ ├── beneficiaries/page.tsx # Gestion des bénéficiaires
+│ ├── exchange-rates/page.tsx # Taux de change
+│ ├── settings/page.tsx # Paramètres du compte
+│ ├── notifications/page.tsx # Centre de notifications
+│ ├── layout.tsx # Layout racine
+│ ├── page.tsx # Page d'accueil (redirect)
+│ └── globals.css # Styles globaux
+├── components/
+│ ├── Sidebar.tsx # Barre latérale
+│ ├── TopBar.tsx # Barre supérieure
+│ └── PageWrapper.tsx # Wrapper pour les pages
+├── lib/
+│ ├── prisma.ts # Client Prisma
+│ └── api.ts # Client API (Axios)
+├── store/
+│ └── useStore.ts # Store Zustand
+├── types/
+│ └── index.ts # Types TypeScript
+├── prisma/
+│ ├── schema.prisma # Schéma de la base de données
+│ └── dev.db # Base de données SQLite
+├── docs/
+│ ├── 01_login.md # Documentation Login
+│ ├── 02_signup.md # Documentation Signup
+│ ├── 03_dashboard.md # Documentation Dashboard
+│ ├── 04_transfer.md # Documentation Transfer
+│ ├── 05_history.md # Documentation History
+│ ├── 06_beneficiaries.md # Documentation Beneficiaries
+│ ├── 07_exchange_rates.md # Documentation Exchange Rates
+│ ├── 08_settings.md # Documentation Settings
+│ ├── 09_notifications.md # Documentation Notifications
+│ └── README.md # Ce fichier
+├── package.json
+├── tsconfig.json
+├── tailwind.config.js
+├── next.config.js
+└── .env.local
+
+
+
+
+
+##  Installation et Lancement
+
+### Prérequis
+- Node.js 18+ 
+- npm ou yarn
+
+### Installation
+```bash
+# Cloner le projet
+git clone <repository-url>
+cd domoney-app
+
+# Installer les dépendances
+npm install
+
+# Initialiser la base de données
+npx prisma generate
+npx prisma db push
+
+# Lancer le serveur de développement
+npm run dev
+
+
+
+
+Accès à l'application
+URL : http://localhost:3000
+Base de données : prisma/dev.db (SQLite)
+Prisma Studio : npx prisma studio (http://localhost:5555)
+👥 Fonctionnalités Principales
+1. Authentification
+Inscription en 3 étapes (Informations → Code PIN → Confirmation)
+Connexion avec email et mot de passe
+Token JWT avec expiration de 7 jours
+Persistance de la session (localStorage)
+2. Tableau de Bord
+Affichage du solde en temps réel
+Statistiques (envoyé, reçu, transactions, bénéficiaires)
+Actions rapides (Envoyer, Convertir, Ajouter bénéficiaire, Historique)
+Dernières transactions (5 plus récentes)
+Bénéficiaires fréquents (3 premiers)
+Taux de change en direct (EUR, USD, GBP)
+3. Transfert d'Argent
+Sélection de bénéficiaire (parmi les acceptés)
+Saisie du montant avec calcul automatique
+Conversion de devise automatique
+Frais de 0.5%
+Confirmation par code PIN à 4 chiffres
+Transaction atomique (tout ou rien)
+4. Historique des Transactions
+Liste complète des transactions (envois et réceptions)
+Filtres par type (Tous, Envois, Reçus)
+Recherche par nom de correspondant
+Pagination (10 transactions par page)
+Statistiques (total envoyé, reçu, en attente, frais)
+5. Gestion des Bénéficiaires
+Liste des bénéficiaires acceptés
+Demandes en attente (à accepter/refuser)
+Ajout par code unique utilisateur
+Recherche et filtrage par région
+Notifications automatiques
+6. Taux de Change
+Convertisseur rapide entre devises
+Tableau des taux de change (8 devises)
+Variations 24h (couleurs selon +/-)
+Pagination (150+ devises)
+7. Paramètres du Compte
+Modification du profil (nom, prénom, téléphone, pays)
+Changement de mot de passe
+Préférences de notifications
+Langue et devise (non modifiable)
+8. Notifications
+Centre de notifications complet
+4 types : demande bénéficiaire, réponse, envoi, réception
+Badge de comptage dans la sidebar et topbar
+Marquage comme lu au clic
+🔐 Sécurité
+Authentification
+Mots de passe hashés avec bcrypt (10 rounds)
+Tokens JWT avec expiration de 7 jours
+Validation côté serveur de toutes les requêtes
+Transactions
+Code PIN à 4 chiffres requis pour chaque transfert
+Validation du solde avant transfert
+Transaction atomique (rollback en cas d'erreur)
+Limites : montant > 0 et < 10 000 000
+Données Utilisateur
+Code unique généré aléatoirement (ex: DM7X9K2)
+Impossibilité de s'ajouter soi-même comme bénéficiaire
+Vérification des doublons avant ajout
+Design
+Palette de Couleurs
+Fond principal : #F5F3EE → #EDE9DF (dégradé crème)
+Sidebar/Buttons : #1A1A2E → #16213E (bleu nuit)
+Accent doré : #C9A84C → #E8C878 (or)
+Texte principal : #1A1A2E (sombre)
+Texte secondaire : #888888 (gris)
+Succès : #4CAF50 (vert)
+Erreur : #E53935 (rouge)
+Attention : #FF9800 (orange)
+Typographie
+Police : Georgia, serif (élégante)
+Titres : font-bold, text-2xl à text-4xl
+Texte : text-sm à text-base
+Labels : text-xs, tracking-wider
+Composants
+Cartes : rounded-2xl à rounded-3xl avec ombre douce
+Boutons : rounded-xl avec dégradés
+Inputs : rounded-xl avec bordure dorée au focus
+Badges : rounded-lg avec couleurs selon statut
+📊 Base de Données
+Tables
+User
+id, email, phone, password, pinCode
+firstName, lastName, country, birthDate
+currency, userCode, balance
+isVerified, createdAt, updatedAt
+Beneficiary
+id, userId, beneficiaryId, status
+createdAt, updatedAt
+Transaction
+id, senderId, receiverId
+amount, currency, receivedAmount, receivedCurrency
+exchangeRate, fees, status, type, description
+createdAt, completedAt
+Notification
+id, userId, type, message
+isRead, createdAt
+Relations
+User → Transactions (sender, receiver)
+User → Beneficiaries (user, beneficiary)
+User → Notifications
+🧪 Testing
+Comptes de Test
+Créez plusieurs comptes pour tester les fonctionnalités :
+Compte 1 : jeanpaul@example.com (XAF)
+Compte 2 : marie@example.com (EUR)
+Compte 3 : peter@example.com (GBP)
+Scénarios de Test
+Inscription → Vérifier le code unique généré
+Connexion → Vérifier la redirection vers le dashboard
+Ajout bénéficiaire → Utiliser le code unique
+Acceptation demande → Vérifier les notifications
+Transfert → Vérifier les soldes avant/après
+Historique → Vérifier l'affichage des transactions
+Paramètres → Modifier le profil et le mot de passe
+📝 Documentation
+Chaque page a sa documentation détaillée dans le dossier docs/ :
+01_login.md : Page de connexion
+02_signup.md : Page d'inscription
+03_dashboard.md : Tableau de bord
+04_transfer.md : Transfert d'argent
+05_history.md : Historique des transactions
+06_beneficiaries.md : Gestion des bénéficiaires
+07_exchange_rates.md : Taux de change
+08_settings.md : Paramètres du compte
+09_notifications.md : Centre de notifications
+🤝 Contribution
+Ce projet est un projet de groupe. Chaque membre est responsable de la documentation de sa partie.
+Répartition Suggérée
+Membre 1 : Authentification (Login + Signup)
+Membre 2 : Dashboard + Transfer
+Membre 3 : History + Beneficiaries
+Membre 4 : Exchange Rates + Settings + Notifications
+📄 Licence
+MIT License - Projet éducatif
+👨💻 Auteurs
+Équipe de développement DoMoney - 2025

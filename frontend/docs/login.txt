@@ -1,0 +1,217 @@
+# PAGE LOGIN - Connexion utilisateur
+
+## 📄 FRONTEND (app/login/page.tsx)
+
+### Structure
+- Page sans sidebar (authentification uniquement)
+- Layout en 2 colonnes : panneau branding à gauche + formulaire à droite
+- Utilise Tailwind CSS avec les couleurs personnalisées DoMoney
+
+### Composants clés
+1. **Panneau gauche (branding)**
+   - Logo DoMoney avec dégradé doré
+   - Tagline "Ton Argent, Partout au Monde"
+   - Statistiques (150+ devises, 0.5% frais, 24/7)
+   - Fond dégradé sombre (#1A1A2E → #16213E)
+
+2. **Formulaire de connexion (droite)**
+   - Champ email/téléphone avec validation
+   - Champ mot de passe avec bouton "œil" pour afficher
+   - Lien "Mot de passe oublié ?"
+   - Bouton "SE CONNECTER" avec dégradé sombre
+   - Lien vers page d'inscription
+
+### Logique React
+```typescript
+const [formData, setFormData] = useState({ email: '', password: '' });
+const [loading, setLoading] = useState(false);
+
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  
+  try {
+    const response = await authApi.login(formData.email, formData.password);
+    setAuth(response.data.data.user, response.data.data.token);
+    toast.success('Connexion réussie!');
+    router.push('/dashboard');
+  } catch (error) {
+    toast.error('Erreur de connexion');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+Flux utilisateur
+Utilisateur saisit email et mot de passe
+Appel API POST /api/auth/login
+Si succès : stockage du token + redirection vers /dashboard
+Si erreur : affichage du message d'erreur
+
+
+
+BACKEND (app/api/auth/login/route.ts)
+Endpoint
+Method : POST
+URL : /api/auth/login
+Body : { email: string, password: string }
+
+export async function POST(request: NextRequest) {
+  // 1. Récupérer les données du body
+  const { email, password } = await request.json();
+  
+  // 2. Chercher l'utilisateur dans la base de données
+  const user = await prisma.user.findUnique({ where: { email } });
+  
+  // 3. Vérifier si l'utilisateur existe
+  if (!user) {
+    return NextResponse.json({ error: 'Identifiants invalides' }, { status: 401 });
+  }
+  
+  // 4. Vérifier le mot de passe avec bcrypt
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return NextResponse.json({ error: 'Identifiants invalides' }, { status: 401 });
+  }
+  
+  // 5. Générer un token JWT
+  const token = jwt.sign(
+    { id: user.id, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+  
+  // 6. Calculer les statistiques de l'utilisateur
+  const totalSent = await prisma.transaction.aggregate({
+    where: { senderId: user.id, status: 'completed' },
+    _sum: { amount: true }
+  });
+  
+  // 7. Retourner les données utilisateur + token
+  return NextResponse.json({
+    success: true,
+    data: {
+      user: { ...user, totalSent, totalReceived, sentCount, receivedCount },
+      token
+    }
+  });
+}
+
+Sécurité
+Mot de passe hashé avec bcrypt (10 rounds)
+Token JWT avec expiration de 7 jours
+Validation des entrées côté serveur
+
+
+ BASE DE DONNÉES (prisma/schema.prisma)
+Table User (utilisée pour la connexion)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique          // Utilisé pour la connexion
+  phone     String?
+  password  String                    // Hashé avec bcrypt
+  firstName String
+  lastName  String
+  country   String
+  birthDate String
+  currency  String   @default("XAF")
+  userCode  String   @unique          // Code unique pour les bénéficiaires
+  balance   Float    @default(327980) // 500 EUR convertis
+  isVerified Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  sentTransactions     Transaction[]
+  receivedTransactions Transaction[]
+  beneficiaries        Beneficiary[]
+  addedBy              Beneficiary[]
+  notifications        Notification[]
+}
+
+
+Champs importants pour le login
+email : Identifiant unique pour la connexion
+password : Mot de passe hashé (jamais en clair)
+id : Identifiant unique utilisé dans le token JWT
+
+
+ FLUX COMPLET
+
+┌─────────────┐     POST /api/auth/login     ┌──────────────┐
+│  Frontend   │ ────────────────────────────▶ │   Backend    │
+│  (Login)    │                               │  (Next.js)   │
+└─────────────┘                               └──────────────┘
+       │                                              │
+       │                                              ▼
+       │                                    ┌──────────────────┐
+       │                                    │  Base de données │
+       │                                    │  (SQLite/Prisma) │
+       │                                    └──────────────────┘
+       │                                              │
+       │                                    Recherche user par email
+       │                                    Vérification mot de passe
+       │                                    Génération token JWT
+       │                                              │
+       │◀─────────────────────────────────────────────┘
+       │  Réponse : { user, token }
+       │
+       ▼
+Stockage token dans localStorage
+Redirection vers /dashboard
+
+
+
+📊 DONNÉES ÉCHANGÉES
+Request (Frontend → Backend)
+
+{
+  "email": "jeanpaul@example.com",
+  "password": "monMotDePasse123"
+}
+
+
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "clx123...",
+      "email": "jeanpaul@example.com",
+      "firstName": "Jean-Paul",
+      "lastName": "Nkemeni",
+      "balance": 327980,
+      "currency": "XAF",
+      "userCode": "DM7X9K2",
+      "totalSent": 450000,
+      "totalReceived": 320000,
+      "sentCount": 12,
+      "receivedCount": 8
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+
+✅ FONCTIONNALITÉS
+Validation des champs (email requis, mot de passe requis)
+Hashage du mot de passe côté serveur
+Génération de token JWT
+Stockage du token côté client
+Redirection après connexion réussie
+Gestion des erreurs avec toast notifications
+État de loading pendant la requête
+Design responsive et fidèle au SVG
+
+
+
+🐛 GESTION DES ERREURS
+Erreurs possibles
+Utilisateur non trouvé → "Identifiants invalides"
+Mot de passe incorrect → "Identifiants invalides"
+Erreur serveur → "Erreur de connexion"
+Token expiré → Redirection automatique vers /login
+Messages d'erreur
+Ne pas révéler si l'email existe ou non (sécurité)
+Messages génériques pour éviter le user enumeration
+'@

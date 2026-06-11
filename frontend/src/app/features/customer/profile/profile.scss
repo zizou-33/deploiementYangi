@@ -1,0 +1,91 @@
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--dark-2);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+
+  .avatar-lg {
+    width: 64px;
+    height: 64px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .avatar-name { font-size: 1.1rem; font-weight: 700; color: var(--white); }
+  .avatar-role { font-size: 0.82rem; color: var(--primary); font-weight: 500; text-transform: capitalize; margin-top: 2px; }
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child { border-bottom: none; }
+
+  i { color: var(--gray); width: 18px; text-align: center; font-size: 0.95rem; flex-shrink: 0; }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .info-label {
+    font-size: 0.75rem;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  .info-value {
+    font-size: 0.95rem;
+    color: var(--white);
+    font-weight: 500;
+  }
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+
+  .btn-primary { flex: 1; }
+}
+
+.show-pw-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--gray-light);
+  cursor: pointer;
+  margin-bottom: 16px;
+  transition: var(--transition);
+
+  &:hover { color: var(--white); }
+}

@@ -1,0 +1,124 @@
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-car"></i></div>
+        <span>Yan<em>gi</em></span>
+      </div>
+    </div>
+    <div class="sidebar-user">
+      <div class="avatar">{{ user?.username?.charAt(0)?.toUpperCase() }}</div>
+      <div class="user-info">
+        <div class="name">{{ user?.username }}</div>
+        <div class="role">Chauffeur</div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Menu</div>
+        <a routerLink="/driver/dashboard" class="active"><i class="fas fa-house"></i> Tableau de bord</a>
+        <a routerLink="/driver/available-rides"><i class="fas fa-map-location-dot"></i> Courses disponibles</a>
+        <a routerLink="/driver/history"><i class="fas fa-clock-rotate-left"></i> Historique</a>
+        <a routerLink="/driver/profile"><i class="fas fa-user"></i> Mon profil</a>
+        <a routerLink="/notifications"><i class="fas fa-bell"></i> Notifications</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button (click)="logout()"><i class="fas fa-right-from-bracket"></i> Déconnexion</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Bonjour, {{ user?.username }} 👋</h1>
+      <p>Voici un aperçu de votre activité</p>
+    </div>
+    <div class="page-content">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon red"><i class="fas fa-route"></i></div>
+          <div class="stat-info">
+            <div class="value">{{ recentRides.length }}</div>
+            <div class="label">Courses totales</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="fas fa-circle-check"></i></div>
+          <div class="stat-info">
+            <div class="value">{{ completedRides }}</div>
+            <div class="label">Terminées</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow"><i class="fas fa-wallet"></i></div>
+          <div class="stat-info">
+            <div class="value">{{ totalEarnings | number }}</div>
+            <div class="label">FCFA gagnés</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Actions rapides</div>
+      <div class="quick-actions">
+        <a routerLink="/driver/available-rides" class="action-card action-primary">
+          <div class="action-icon"><i class="fas fa-map-location-dot"></i></div>
+          <div class="action-info">
+            <strong>Courses disponibles</strong>
+            <span>Voir et accepter des trajets</span>
+          </div>
+          <i class="fas fa-chevron-right action-arrow"></i>
+        </a>
+        <a routerLink="/driver/history" class="action-card">
+          <div class="action-icon blue"><i class="fas fa-clock-rotate-left"></i></div>
+          <div class="action-info">
+            <strong>Historique</strong>
+            <span>Vos courses passées</span>
+          </div>
+          <i class="fas fa-chevron-right action-arrow"></i>
+        </a>
+        <a routerLink="/driver/profile" class="action-card">
+          <div class="action-icon yellow"><i class="fas fa-user-gear"></i></div>
+          <div class="action-info">
+            <strong>Mon profil</strong>
+            <span>Gérer mes informations</span>
+          </div>
+          <i class="fas fa-chevron-right action-arrow"></i>
+        </a>
+      </div>
+
+      <div class="section-title" style="margin-top:36px">Courses récentes</div>
+      @if (loading) {
+        <div class="loading-wrapper"><div class="spinner"></div><span>Chargement...</span></div>
+      } @else if (recentRides.length === 0) {
+        <div class="empty-state">
+          <i class="fas fa-car-side"></i>
+          <h3>Aucune course</h3>
+          <p>Vous n'avez pas encore effectué de trajet.</p>
+          <a routerLink="/driver/available-rides" class="btn btn-primary" style="margin-top:8px">Voir les courses</a>
+        </div>
+      } @else {
+        <div class="rides-list">
+          @for (ride of recentRides; track ride.id) {
+            <div class="ride-item">
+              <div class="ride-icon"><i class="fas fa-car"></i></div>
+              <div class="ride-info">
+                <div class="ride-route">
+                  <span class="pickup"><i class="fas fa-circle-dot"></i>{{ ride.pickup_location || ride.pickup_address }}</span>
+                  <i class="fas fa-arrow-right ride-sep"></i>
+                  <span class="destination"><i class="fas fa-location-dot"></i>{{ ride.destination || ride.destination_address }}</span>
+                </div>
+                <div class="ride-meta">
+                  <span>{{ ride.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+              </div>
+              <div class="ride-right">
+                <div class="ride-price">{{ ride.price | number }} FCFA</div>
+                <span class="badge badge-{{ ride.status }}">{{ ride.status }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </main>
+</div>

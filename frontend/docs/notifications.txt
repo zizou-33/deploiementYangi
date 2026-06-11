@@ -1,0 +1,517 @@
+# PAGE NOTIFICATIONS - Centre de notifications
+
+## 📄 FRONTEND (app/notifications/page.tsx)
+
+### Structure
+- Page AVEC sidebar et topbar
+- Layout simple : Liste des notifications
+- Badge de comptage des notifications non lues
+
+### Composants clés
+
+#### 1. En-tête de la page
+```typescript
+<div className="p-6 border-b border-[#F0EDE5]">
+  <h2 className="text-lg font-bold text-[#1A1A2E]">Toutes les notifications</h2>
+  <p className="text-sm text-[#888] mt-1">{notifications.filter(n => !n.isRead).length} non lue{notifications.filter(n => !n.isRead).length > 1 ? 's' : ''}</p>
+</div>
+
+
+2. Liste des notifications
+
+
+<div className="divide-y divide-[#F5F3EE]">
+  {loading ? (
+    <div className="p-12 text-center text-[#888]">Chargement...</div>
+  ) : notifications.length === 0 ? (
+    <div className="p-12 text-center text-[#888]">
+      <div className="text-6xl mb-4">🔔</div>
+      <p className="text-lg font-bold text-[#1A1A2E] mb-2">Aucune notification</p>
+      <p className="text-sm">Vous n'avez pas de notifications pour le moment</p>
+    </div>
+  ) : (
+    notifications.map((notification) => (
+      <div 
+        key={notification.id} 
+        className={`p-6 hover:bg-[#F5F3EE]/50 transition cursor-pointer ${
+          !notification.isRead ? 'bg-[#FFFBF0]' : ''
+        }`}
+        onClick={() => markAsRead(notification.id)}
+      >
+        <div className="flex items-start gap-4">
+          {/* Icône selon le type */}
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${
+            notification.type === 'beneficiary_request' ? 'bg-[#FFF3E0] text-[#FF9800]' :
+            notification.type === 'beneficiary_response' ? 'bg-[#E8F5E9] text-[#4CAF50]' :
+            notification.type === 'transfer_sent' ? 'bg-[#E3F2FD] text-[#2196F3]' :
+            notification.type === 'transfer_received' ? 'bg-[#E8F5E9] text-[#4CAF50]' :
+            'bg-[#F5F3EE] text-[#888]'
+          }`}>
+            {notification.type === 'beneficiary_request' ? '👥' :
+             notification.type === 'beneficiary_response' ? '✅' :
+             notification.type === 'transfer_sent' ? '✈️' :
+             notification.type === 'transfer_received' ? '📥' :
+             ''}
+          </div>
+          
+          {/* Contenu */}
+          <div className="flex-1">
+            <p className="text-sm text-[#1A1A2E] font-medium">{notification.message}</p>
+            <p className="text-xs text-[#888] mt-1">
+              {new Date(notification.createdAt).toLocaleString('fr-FR')}
+            </p>
+          </div>
+          
+          {/* Indicateur non lu */}
+          {!notification.isRead && (
+            <div className="w-2 h-2 bg-[#C9A84C] rounded-full" />
+          )}
+        </div>
+      </div>
+    ))
+  )}
+</div>
+
+
+
+Logique React
+
+
+
+const [notifications, setNotifications] = useState<Notification[]>([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  loadNotifications();
+}, []);
+
+const loadNotifications = async () => {
+  try {
+    const response = await notificationApi.getNotifications();
+    setNotifications(response.data.data.notifications);
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+const markAsRead = async (id: string) => {
+  try {
+    await notificationApi.markAsRead(id);
+    loadNotifications(); // Recharger la liste
+  } catch (error) {
+    console.error('Error marking as read:', error);
+  }
+};
+
+const getIcon = (type: string) => {
+  switch (type) {
+    case 'beneficiary_request': return '👥';
+    case 'beneficiary_response': return '✅';
+    case 'transfer_sent': return '✈️';
+    case 'transfer_received': return '';
+    default: return '🔔';
+  }
+};
+
+const getColor = (type: string) => {
+  switch (type) {
+    case 'beneficiary_request': return 'bg-[#FFF3E0] text-[#FF9800]';
+    case 'beneficiary_response': return 'bg-[#E8F5E9] text-[#4CAF50]';
+    case 'transfer_sent': return 'bg-[#E3F2FD] text-[#2196F3]';
+    case 'transfer_received': return 'bg-[#E8F5E9] text-[#4CAF50]';
+    default: return 'bg-[#F5F3EE] text-[#888]';
+  }
+};
+
+
+
+🔧 BACKEND
+
+Endpoint 1 : GET /api/notifications
+
+export async function GET(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const notifications = await prisma.notification.findMany({
+    where: { userId: decoded.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  
+  const unreadCount = await prisma.notification.count({
+    where: { userId: decoded.id, isRead: false },
+  });
+  
+  return NextResponse.json({
+    success: true,
+    data: {
+      notifications: notifications.map(n => ({
+        ...n,
+        createdAt: n.createdAt.toISOString(),
+      })),
+      unreadCount,
+    },
+  });
+}
+
+
+
+Endpoint 2 : PUT /api/notifications
+
+export async function PUT(request: NextRequest) {
+  const authHeader = request.headers.get('authorization');
+  const token = authHeader.replace('Bearer ', '');
+  const decoded = jwt.verify(token, process.env.JWT_SECRET) as { id: string };
+  
+  const { notificationId } = await request.json();
+  
+  await prisma.notification.updateMany({
+    where: { id: notificationId, userId: decoded.id },
+    data: { isRead: true },
+  });
+  
+  return NextResponse.json({ success: true });
+}
+
+
+
+BASE DE DONNÉES
+Table Notification
+
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // 'beneficiary_request', 'beneficiary_response', 'transfer_sent', 'transfer_received'
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+
+Types de notifications
+1. beneficiary_request
+Créée quand un utilisateur demande à vous ajouter comme bénéficiaire.
+
+
+Notification {
+  id: "clx001...",
+  userId: "clx789...",  // Destinataire de la demande
+  type: "beneficiary_request",
+  message: "Jean-Paul Nkemeni souhaite vous ajouter comme bénéficiaire",
+  isRead: false,
+  createdAt: "2025-01-15T10:00:00Z"
+}
+
+
+
+
+2. beneficiary_response
+Créée quand vous acceptez ou refusez une demande.
+
+Notification {
+  id: "clx002...",
+  userId: "clx123...",  // Demandeur initial
+  type: "beneficiary_response",
+  message: "Marie Dupont a accepté votre demande",
+  isRead: false,
+  createdAt: "2025-01-15T11:00:00Z"
+}
+
+
+
+3. transfer_sent
+Créée quand vous envoyez de l'argent.
+
+
+
+Notification {
+  id: "clx003...",
+  userId: "clx123...",  // Expéditeur
+  type: "transfer_sent",
+  message: "Vous avez envoyé 50000 XAF à Marie Dupont",
+  isRead: false,
+  createdAt: "2025-01-15T14:32:00Z"
+}
+
+
+
+
+4. transfer_received
+Créée quand vous recevez de l'argent.
+
+
+Notification {
+  id: "clx004...",
+  userId: "clx789...",  // Destinataire
+  type: "transfer_received",
+  message: "Vous avez reçu 76.28 EUR de Jean-Paul Nkemeni",
+  isRead: false,
+  createdAt: "2025-01-15T14:32:00Z"
+}
+
+
+
+
+🔄 FLUX DE NOTIFICATION
+Scénario 1 : Demande de bénéficiaire
+
+
+┌──────────────────┐
+│  Utilisateur A   │  Envoie une demande d'ajout
+│                  │  (code unique de B)
+└────────┬─────────┘
+         │
+         ▼
+──────────────────┐
+│  Backend         │  Crée une notification pour B
+│  création        │  type: 'beneficiary_request'
+│  notification    │  message: "A souhaite vous ajouter"
+└─────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Utilisateur B   │  Voit la notification dans la sidebar
+│  reçoit la       │  Badge "3" (nombre de non-lues)
+│  notification    │
+└──────────────────┘
+
+
+
+
+
+Scénario 2 : Acceptation de la demande
+
+
+
+┌──────────────────
+│  Utilisateur B   │  Accepte la demande
+│                  │  (bouton "Accepter")
+└────────┬─────────
+         │
+         ▼
+┌──────────────────┐
+│  Backend         │  - Met à jour le statut (accepted)
+│  mise à jour     │  - Crée une notification pour A
+│                  │    type: 'beneficiary_response'
+│                  │    message: "B a accepté votre demande"
+└─────────────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Utilisateur A   │  Voit la notification
+│  reçoit la       │  Peut maintenant envoyer de l'argent à B
+│  notification    │
+└──────────────────┘
+
+
+
+Scénario 3 : Transfert d'argent
+
+
+┌──────────────────┐
+│  Utilisateur A   │  Envoie 50000 XAF à B
+│                  │  (via page Transfer)
+└────────┬─────────┘
+         │
+         ▼
+──────────────────┐
+│  Backend         │  - Crée la transaction
+│  création        │  - Débite A, Crédite B
+│  transaction     │  - Crée 2 notifications
+│                  │    1 pour A: 'transfer_sent'
+│                  │    1 pour B: 'transfer_received'
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Utilisateur A   │  Notification: "Vous avez envoyé 50000 XAF à B"
+│  Utilisateur B   │  Notification: "Vous avez reçu 76.28 EUR de A"
+└──────────────────┘
+
+
+
+
+DONNÉES ÉCHANGÉES
+Request GET /api/notifications
+
+
+Headers: Authorization: Bearer <token>
+
+
+Response GET /api/notifications
+
+{
+  "success": true,
+  "data": {
+    "notifications": [
+      {
+        "id": "clx001...",
+        "userId": "clx123...",
+        "type": "transfer_received",
+        "message": "Vous avez reçu 76.28 EUR de Jean-Paul Nkemeni",
+        "isRead": false,
+        "createdAt": "2025-01-15T14:32:00.000Z"
+      }
+    ],
+    "unreadCount": 3
+  }
+}
+
+
+
+Request PUT /api/notifications
+
+{
+  "notificationId": "clx001..."
+}
+
+
+
+Response PUT /api/notifications
+
+
+{
+  "success": true
+}
+
+
+
+✅ FONCTIONNALITÉS
+Affichage de toutes les notifications
+Tri par date décroissante (plus récentes en premier)
+Comptage des notifications non lues
+Marquage comme lu au clic
+Icônes différentes selon le type
+Couleurs différentes selon le type
+Indicateur visuel pour les non-lues (pastille dorée)
+Fond différent pour les non-lues (jaune clair)
+Formatage de la date en français
+État de chargement
+État vide (aucune notification)
+Design responsive et fidèle au SVG
+
+
+Badge de notifications
+
+<Link href="/notifications" className="bg-white/5 border border-[#C9A84C]/30 rounded-xl p-4 mb-4 flex items-center gap-3">
+  <span className="text-lg">🔔</span>
+  <div className="flex-1">
+    <p className="text-[#CCCCDD] text-xs font-bold">Notifications</p>
+    <p className="text-[#888] text-[11px]">{unreadCount} nouvelle{unreadCount > 1 ? 's' : ''} alerte{unreadCount > 1 ? 's' : ''}</p>
+  </div>
+  {unreadCount > 0 && (
+    <div className="w-5 h-5 bg-[#C9A84C] rounded-full flex items-center justify-center text-[#1A1A2E] text-[10px] font-bold">
+      {unreadCount}
+    </div>
+  )}
+</Link>
+
+
+
+Badge dans la TopBar
+
+
+<Link href="/notifications" className="relative p-2 bg-[#F0EDE5] rounded-xl">
+  <span className="text-xl"></span>
+  {unreadCount > 0 && (
+    <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#C9A84C] rounded-full flex items-center justify-center text-[10px] font-bold text-[#1A1A2E]">
+      {unreadCount}
+    </span>
+  )}
+</Link>
+
+
+
+🐛 GESTION DES ERREURS
+Erreurs possibles
+Token expiré → Redirection vers /login
+Erreur API → Console error + affichage vide
+Aucune notification → Message "Aucune notification"
+Erreur de marquage → Console error, pas de rechargement
+
+
+
+
+
+État de chargement
+
+
+
+{loading ? (
+  <div className="p-12 text-center text-[#888]">Chargement...</div>
+) : notifications.length === 0 ? (
+  <div className="p-12 text-center text-[#888]">
+    <div className="text-6xl mb-4">🔔</div>
+    <p className="text-lg font-bold text-[#1A1A2E] mb-2">Aucune notification</p>
+    <p className="text-sm">Vous n'avez pas de notifications pour le moment</p>
+  </div>
+) : (
+  // Affichage des notifications
+)}
+
+
+
+
+📈 PERFORMANCES
+Optimisations
+Rechargement après action : loadNotifications() après marquage comme lu
+Tri côté base de données : ORDER BY created_at DESC
+Comptage séparé : Requête COUNT distincte pour le badge
+Index SQL : Index sur user_id et is_read
+
+
+Lors de l'ajout d'un bénéficiaire
+
+// Dans POST /api/beneficiaries
+await prisma.notification.create({
+  data: {
+    userId: beneficiary.id,  // Destinataire de la demande
+    type: 'beneficiary_request',
+    message: `${decoded.id} souhaite vous ajouter comme bénéficiaire`,
+  },
+});
+
+
+
+Lors de l'acceptation/refus
+
+// Dans PUT /api/beneficiaries/[id]/respond
+await prisma.notification.create({
+  data: {
+    userId: beneficiary.userId,  // Demandeur initial
+    type: 'beneficiary_response',
+    message: `${requester?.firstName} ${requester?.lastName} a ${status === 'accepted' ? 'accepté' : 'refusé'} votre demande`,
+  },
+});
+
+
+
+Lors d'un transfert
+
+
+// Dans POST /api/transactions
+await prisma.notification.create({
+  data: {
+    userId: receiverId,  // Destinataire de l'argent
+    type: 'transfer_received',
+    message: `Vous avez reçu ${receivedAmount} ${receivedCurrency} de ${sender.firstName} ${sender.lastName}`,
+  },
+});
+
+await prisma.notification.create({
+  data: {
+    userId: decoded.id,  // Expéditeur de l'argent
+    type: 'transfer_sent',
+    message: `Vous avez envoyé ${amount} ${currency} à ${receiver.firstName} ${receiver.lastName}`,
+  },
+});
+
+
+

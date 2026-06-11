@@ -1,0 +1,67 @@
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo">
+        <div class="logo-icon"><i class="fas fa-car"></i></div>
+        <span>Yan<em>gi</em></span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">Administration</div>
+        <a routerLink="/admin/dashboard" class="active"><i class="fas fa-chart-line"></i> Tableau de bord</a>
+        <a routerLink="/admin/users"><i class="fas fa-users"></i> Utilisateurs</a>
+        <a routerLink="/admin/requests"><i class="fas fa-file-alt"></i> Candidatures</a>
+        <a routerLink="/admin/rides"><i class="fas fa-route"></i> Courses</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button (click)="logout()"><i class="fas fa-right-from-bracket"></i> Déconnexion</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Tableau de bord Admin</h1>
+      <p>Vue d'ensemble de la plateforme</p>
+    </div>
+    <div class="page-content">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+          <div class="stat-info"><div class="value">{{ stats.users }}</div><div class="label">Utilisateurs</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i class="fas fa-id-badge"></i></div>
+          <div class="stat-info"><div class="value">{{ stats.drivers }}</div><div class="label">Chauffeurs</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red"><i class="fas fa-route"></i></div>
+          <div class="stat-info"><div class="value">{{ stats.rides }}</div><div class="label">Courses totales</div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon yellow"><i class="fas fa-hourglass-half"></i></div>
+          <div class="stat-info"><div class="value">{{ stats.requests }}</div><div class="label">Candidatures en attente</div></div>
+        </div>
+      </div>
+
+      <div class="quick-actions" style="margin-top:8px">
+        <a routerLink="/admin/users" class="action-card">
+          <div class="action-icon blue"><i class="fas fa-users"></i></div>
+          <div class="action-info"><strong>Gérer les utilisateurs</strong><span>Bloquer / débloquer des comptes</span></div>
+          <i class="fas fa-chevron-right action-arrow"></i>
+        </a>
+        <a routerLink="/admin/requests" class="action-card action-primary">
+          <div class="action-icon"><i class="fas fa-file-alt"></i></div>
+          <div class="action-info"><strong>Candidatures chauffeurs</strong><span>Approuver ou refuser</span></div>
+          <i class="fas fa-chevron-right action-arrow"></i>
+        </a>
+        <a routerLink="/admin/rides" class="action-card">
+          <div class="action-icon green"><i class="fas fa-route"></i></div>
+          <div class="action-info"><strong>Toutes les courses</strong><span>Superviser les trajets</span></div>
+          <i class="fas fa-chevron-right action-arrow"></i>
+        </a>
+      </div>
+    </div>
+  </main>
+</div>
